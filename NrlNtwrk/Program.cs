@@ -48,17 +48,20 @@ class Program
         NeuralNetwork nn = new NeuralNetwork(inputSize, hiddenSize1, hiddenSize2, 2);
 
         // Treniranje mreže.
-        double learningRate = 0.005;
+        double learningRate = 0.0005;
         int epochs = inputSize;
         for (int j = 0; j < inputs.Count; j++)
         {
 
             //Console.WriteLine("vector("+j+")  ----> to Train()");
-
+            learningRate *= 0.99999;
             nn.Train(inputs[j], targetOutputs[j], learningRate);
         }
-        double[] primjer = { 0.9329245, 0.90895582, 0.948307237, 0.961109386, 0.980227584, 0.889202916, 0.822363443, 0.800458921, 0.895494824, 0.943359372, 0.896160404, 0.944518666, 0.998578481, 0.8074368943, 0.914042408, 0.943220914, 0.910998489, 0.989688387, 0.936573072, 0.900655177 };
-        Console.WriteLine(nn.Predict(primjer));
+        //double[] primjer = { -0.38318, -0.82199, -0.73675, -0.73978, 0.160042, 0.78087, 0.886683, -0.94717, -0.47481, 0.201133, -0.48637, 0.693209, 0.547834, 0.327055, 0.882708, 0.041186, -0.08069, -0.03378, 0.637053, -0.97411 }; // 62.7 %
+        double[] primjer = { 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89, 0.89 }; // 100 %
+        //double[] primjer = { -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89, -0.89 }; // 0.0%
+
+        Console.WriteLine(Math.Round(nn.Predict(primjer).Item2 * 100, 3) +" %");
         Console.ReadLine();
     }
 }
@@ -90,7 +93,7 @@ public class NeuralNetwork
         {
             for (int j = 0; j < hiddenSize1; j++)
             {
-                weights1[i, j] = rand.NextDouble() * 2 - 1;
+                weights1[i, j] = 80;// rand.NextDouble() * 2 - 1;
             }
         }
 
@@ -99,7 +102,7 @@ public class NeuralNetwork
         {
             for (int j = 0; j < hiddenSize2; j++)
             {
-                weights2[i, j] = rand.NextDouble() * 2 - 1;
+                weights2[i, j] =  rand.NextDouble() * 2 - 1;
             }
         }
 
@@ -157,7 +160,7 @@ public class NeuralNetwork
 
     //Treniranje Neuralne Mreže --------------------------------------------------
     public void Train(double[] input, (double, double) targetOutput, double learningRate)
-    {
+    {        
         // Propagacija ulaza kroz mrežu.
         double[] hidden1 = new double[hiddenSize1];
         for (int i = 0; i < hiddenSize1; i++)
@@ -216,10 +219,10 @@ public class NeuralNetwork
             }
         }
         //Console.WriteLine("h: 1 & 2 " + hidden1[0] + " " + hidden2[0]);
-        Console.WriteLine("w: 1 & 2 " + weights1[4,4] + " " + weights2[4,4]);
+        Console.WriteLine("w: 1 & 2 " + weights1[4,4] + " " + weights2[4,4]+ " " + learningRate);
     }
 }
 
-
+//BACKPROP: !!!!!!!!!!!!!!!!
 
 
