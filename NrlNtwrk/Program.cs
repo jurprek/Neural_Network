@@ -16,19 +16,27 @@ class Program
         {
             using (var reader = ExcelReaderFactory.CreateReader(stream))
             {
+                int w = 0;
                 while (reader.Read())
                 {
                     // Ignoriraj prvi red koji je zaglavlje.
                     if (reader.Depth > 0)
                     {
-                        double[] input = new double[2];
-                        input[0] = (double)reader.GetDouble(0);
-                        input[1] = (double)reader.GetDouble(1);
-                        double output1 = reader.GetDouble(2);
-                        double output2 = reader.GetDouble(3);
+                        double[] input = new double[20];
+                        for (int m = 0; m < 20; m++) {
+                            input[m] = (double)reader.GetDouble(m);
+                        }
+                        double output1 = reader.GetDouble(20);
+                        double output2 = reader.GetDouble(21);
                         targetOutputs.Add((output1, output2));
                         inputs.Add(input);
+                       /* for (int r  = 0; r < 20; r++) {
+                            Console.WriteLine(w + ". " + input[r].ToString()); w++;
+                        }
+                       */
                     }
+                    //Console.WriteLine(w+". DataSet01.xlsx trainer loaded.");
+                    w++;
                 }
             }
         }
@@ -37,19 +45,20 @@ class Program
         int inputSize = 20;
         int hiddenSize1 = 10;
         int hiddenSize2 = 5;
-        NeuralNetwork nn = new NeuralNetwork(inputSize, hiddenSize1, hiddenSize2, 0);
+        NeuralNetwork nn = new NeuralNetwork(inputSize, hiddenSize1, hiddenSize2, 2);
 
         // Treniranje mreže.
-        double learningRate = 0.1;
-        int epochs = inputSize+2;
-        for (int i = 0; i < epochs; i++)
+        double learningRate = 0.005;
+        int epochs = inputSize;
+        for (int j = 0; j < inputs.Count; j++)
         {
-            for (int j = 0; j < inputs.Count; j++)
-            {
-                Console.WriteLine(i+" "+j+" "+ inputs[j].ToString());
-                //nn.Train(inputs[j], targetOutputs[j], learningRate);
-            }
+
+            //Console.WriteLine("vector("+j+")  ----> to Train()");
+
+            nn.Train(inputs[j], targetOutputs[j], learningRate);
         }
+        double[] primjer = { 0.9329245, 0.90895582, 0.948307237, 0.961109386, 0.980227584, 0.889202916, 0.822363443, 0.800458921, 0.895494824, 0.943359372, 0.896160404, 0.944518666, 0.998578481, 0.8074368943, 0.914042408, 0.943220914, 0.910998489, 0.989688387, 0.936573072, 0.900655177 };
+        Console.WriteLine(nn.Predict(primjer));
         Console.ReadLine();
     }
 }
@@ -107,7 +116,7 @@ public class NeuralNetwork
         }
     }
 
-    public (double, double) Predict(int[] input)
+    public (double, double) Predict(double[] input)
     {
         // Propagacija ulaza kroz mrežu.
         double[] hidden1 = new double[hiddenSize1];
@@ -146,7 +155,7 @@ public class NeuralNetwork
 
 
 
-    //Treniranje Neuralne Mreže (20,10,5,2)--------------------------------------------------
+    //Treniranje Neuralne Mreže --------------------------------------------------
     public void Train(double[] input, (double, double) targetOutput, double learningRate)
     {
         // Propagacija ulaza kroz mrežu.
@@ -206,6 +215,8 @@ public class NeuralNetwork
                 bias2[i] += error * learningRate;
             }
         }
+        //Console.WriteLine("h: 1 & 2 " + hidden1[0] + " " + hidden2[0]);
+        Console.WriteLine("w: 1 & 2 " + weights1[4,4] + " " + weights2[4,4]);
     }
 }
 
