@@ -8,8 +8,8 @@ class NeuralNetwork
 { 
     // Definicija mreže.
     static int Ulaz = 5;    //  <----------------------------------------------------------------------
-    static int Size1 = 10;
-    static int Size2 = 10;
+    static int Size1 = 4;
+    static int Size2 = 4;
     static int Izlaz = 1;
 
     private int inputSize;
@@ -50,7 +50,7 @@ class NeuralNetwork
     {
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
         // Učitavanje podataka iz Excela.
-        string filePath = @"C:\Users\jpreksavec\Desktop\DataSet02.xlsx";
+        string filePath = @"C:\Users\jpreksavec\Desktop\DataSet03.xlsx";
         List<double[]> inputs = new List<double[]>();
         List < double[]> targetOutputs = new List<double[]>();
         using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
@@ -71,7 +71,7 @@ class NeuralNetwork
                         double[] output = new double[Izlaz];
                         for (int m = 0; m < Izlaz; m++)
                         {
-                            output[m] = reader.GetDouble(m);
+                            output[m] = reader.GetDouble(m + Ulaz);
                         }
                        
                         targetOutputs.Add(output);
@@ -94,11 +94,13 @@ class NeuralNetwork
         int epochs = Ulaz;
         for (int j = 0; j < inputs.Count; j++)
         {
-            double learningRate = 0.10;
+            //if(j%10==0) Console.WriteLine(j);
+            double learningRate = 0.30;
 
-            for (int r = 0; r < 1000; r++){   //   <---------------------------------------------------------------------------------- broj iteracija po istom uzorku
+            for (int r = 0; r < 1; r++){   //   <---------------------------------------------------------------------------------- broj iteracija po istom uzorku
                 if (learningRate < 0.005) learningRate = 0.005;
-                else learningRate *= 0.99995;
+                else learningRate *= 0.99;
+                
                 nn.Train(inputs[j], targetOutputs[j], learningRate); /*Console.Write(100 - r);*/              
 
             }
@@ -106,47 +108,14 @@ class NeuralNetwork
 
 
         double[,] primjer = {
-         /*   { 1, 1, 1, 1, 1 },
-            { 0, 0, 0, 0, 0},
-            { -1, -1, -1, -1, -1},
-        */
-           { -0.960151084445761,-0.522024543102316,-0.283819523839298,0,0 },
-           {-0.635073104133522,-0.345282895986355,-0.187726857718821,0,0 },
-           { 0,0,0.319639258322947,0.639278516645894,1.17581437334859 },
-           { -0.898146721350269,-0.488313390930928,-0.265491107515236,0,0 },
-           { -1.28417392540948,-0.69819252150588,-0.379600292017532,0,0 },
-           { 0,0,0.231927631939479,0.463855263878957,0.853161293897179 },
-           { -0.338334731091656,-0.183949209947223,-0.100011345956206,0,0 },
-           { 0,0,0.079752311547507,0.159504623095014,0.293374207903426 },
-           { -0.210409582783204,-0.1143975860634,-0.06219682356681,0,0 },
-           { -0.204962595565051,-0.111436113582763,-0.0605867005938122,0,0 },
-           { -0.325676931179689,-0.177067290713085,-0.0962697152877974,0,0 },
-           { -0.329706297726075,-0.179258017010689,-0.0974607912685418,0,0 },
-           { -0.463649949529699,-0.252081841059802,-0.137054376165804,0,0 },
-           { -0.913186111233959,-0.496490156816791,-0.269936733359721,0,0 },
-           { 0,0,0.203134090745992,0.406268181491985,0.747242328334133 },
-           { -0.685963109235453,-0.372951282860223,-0.202769882978275,0,0 },
-           { -1.14460598181805,-0.622310826254653,-0.338344173126392,0,0 },
-           { 0,0,0.333975368236926,0.667950736473853,1.22855071175459 },
-           { -0.608078492827658,-0.330606195765469,-0.179747282575728,0,0 },
-           { 0,0,0.306192338234765,0.61238467646953,1.12634897914166 },
-           { -0.864943629529141,-0.470261201938698,-0.255676312882051,0,0 },
-           { -0.054651941273419,-0.0297137139509452,-0.0161550491379894,0,0 },
-           { -1.04323919682635,-0.567198718922518,-0.308380271490984,0,0 },
-           { -0.584293379230526,-0.317674467353845,-0.172716431155612,0,0 },
-           { -0.24610301883102,-0.133803750308237,-0.0727477610050856,0,0 },
-           { 0,0,0.261216398662313,0.522432797324626,0.960901979666034 },
-           { -1.27583616317497,-0.693659363556601,-0.377135659372088,0,0 },
-           { -0.506295730975247,-0.275267925973932,-0.149660418672767,0,0 },
-           { -1.06607843646753,-0.579616185123029,-0.31513152368954,0,0 },
-           { 0,0,0.267099875753598,0.534199751507197,0.982544743341236 },
+           { 1,1,1,1,1 },
+           { 0,0,0,0,0 },
+           { -1,-1,-1,-1,-1 },
         };
-
-        int red;
-        for (int t = 0; t < primjer.GetLength(0); t++) //    <--------------------------------------------------------------BROJ REDOVA (UNESENIH PRIMJERA) !!!!!!!!!!!!!!!!
-        {
-            red = t;
-            double[] Row = new double[primjer.GetLength(1)];
+        
+        double[] Row = new double[primjer.GetLength(1)];
+        for (int red = 0; red < primjer.GetLength(0); red++) //    <--------------------------------------------------------------BROJ REDOVA (UNESENIH PRIMJERA) !!!!!!!!!!!!!!!!
+        {           
             for (int i = 0; i < primjer.GetLength(1); i++)
             {
                 Row[i] = primjer[red, i];
@@ -159,14 +128,13 @@ class NeuralNetwork
                 {
                     Sgm += x[i];
                 }
-                return 1- 1 / (1 + Math.Exp(-Sgm));
+                return 1 - 1 / (1 + Math.Exp(-Sgm));
             }
 
             double[] OutputedVals = nn.Predict(Row, 0); //  <------------------------------------------------------------------------ 0 (ili 1 za detalje)
-
-            for (int i = 0; i < Izlaz; i++) {
-                Console.WriteLine(Math.Round(OutputedVals[i]*100, 2) + " %.");
-            }
+            
+            Console.WriteLine(Math.Round(OutputedVals[0]*100, 6) + " %.");
+           
             Console.WriteLine(" ---> " + Math.Round(SigmoidajRedak(Row)*100, 2) + " %."); 
             Console.WriteLine("-------------");
         }
@@ -235,19 +203,19 @@ class NeuralNetwork
         bias1 = new double[hiddenSize1];
         for (int i = 0; i < hiddenSize1; i++)
         {
-            bias1[i] =  rand.NextDouble() * 2 - 1;
+            bias1[i] = 0;// rand.NextDouble() * 2 - 1;
         }
 
         bias2 = new double[hiddenSize2];
         for (int i = 0; i < hiddenSize2; i++)
         {
-            bias2[i] =  rand.NextDouble() * 2 - 1;
+            bias2[i] = 0;//  rand.NextDouble() * 2 - 1;
         }
 
         bias3 = new double[outputSize];
         for (int i = 0; i < outputSize; i++)
         {
-            bias3[i] =  rand.NextDouble() * 2 - 1;
+            bias3[i] = 0;//  rand.NextDouble() * 2 - 1;
         }
     }
 
@@ -255,17 +223,21 @@ class NeuralNetwork
 
     private double Sigmoid(double x)
     {
-        return 1.0 / (1.0 + Math.Exp(-1*x));
+        return  1.0 / (1.0 + Math.Exp(-5*x));
     }
     private double Gradient(double x)
     {
-        return 0;
+        return Sigmoid(x) * ( 1 - Sigmoid(x) );
     }
 
 
 
     public double[] Predict(double[] input, int x)
     {
+        double s1 = 0;
+        double s2 = 0;
+        double s3 = 0;
+
         // Propagacija ulaza kroz mrežu.
         double[] hidden1 = new double[hiddenSize1];
         for (int i = 0; i < hiddenSize1; i++)
@@ -275,7 +247,7 @@ class NeuralNetwork
             {
                 sum += input[j] * weights1[j, i];
             }
-            hidden1[i] = Sigmoid(sum + bias1[i]);
+            hidden1[i] = Gradient(sum + bias1[i]); s1 = Gradient(sum);
         }
 
         double[] hidden2 = new double[hiddenSize2];
@@ -286,7 +258,7 @@ class NeuralNetwork
             {
                 sum += hidden1[j] * weights2[j, i];
             }
-            hidden2[i] = Sigmoid(sum + bias2[i]);
+            hidden2[i] = Gradient(sum + bias2[i]); s2 = Gradient(sum);
         }
 
         double[] output = new double[outputSize];
@@ -297,20 +269,10 @@ class NeuralNetwork
             {
                 sum += hidden2[j] * weights3[j, i];
             }
-            output[i] = Sigmoid(sum + bias3[i]);
+            output[i] = Gradient(sum + bias3[i]); s3 = Gradient(sum);
         }
 
-        // Izračun pogreške izlaza.
-        double[] targetOutput = new double[outputSize];
-        for (int i = 0; i < outputSize; i++) targetOutput[i] = 0;
-        
-        double[] outputError = new double[outputSize];
-        for (int i = 0; i < outputSize; i++) outputError[i] = 0;
-
-        for (int i = 0; i < outputSize; i++)
-        {
-            outputError[i] = (targetOutput[i] - output[i]) * output[i] * (1 - output[i]);
-        }
+        Console.WriteLine(s1 + " " + s2 + " " + s3);
 
         if (x == 1) {
             Console.WriteLine("Hidden layer 1 values:");
@@ -330,12 +292,6 @@ class NeuralNetwork
             {
                 Console.WriteLine($"Node {i + 1}: {output[i]}");
             }
-
-            Console.WriteLine("\nOutput error:");
-            for (int i = 0; i < outputSize; i++)
-            {
-                Console.WriteLine($"Node {i + 1}: {outputError[i]}");
-            }
         }
         
         File.WriteAllText(weightsfilePath3, fileContent3);
@@ -351,45 +307,47 @@ class NeuralNetwork
     public void Train(double[] input, double[] targetOutput, double learningRate)
     {
         // Propagacija unaprijed
-        for (int j = 0; j < hiddenSize1; j++)
+
+        double[] hidden1 = new double[hiddenSize1];
+        for (int i = 0; i < hiddenSize1; i++)
         {
             double sum = 0;
-            for (int i = 0; i < inputSize; i++)
+            for (int j = 0; j < inputSize; j++)
             {
-                sum += input[i] * weights1[i, j];
+                sum += input[j] * weights1[j, i];
             }
-            hidden1[j] = Sigmoid(sum + bias1[j]);
+            hidden1[i] = Gradient(sum + bias1[i]);
         }
 
-        for (int j = 0; j < hiddenSize2; j++)
+        double[] hidden2 = new double[hiddenSize2];
+        for (int i = 0; i < hiddenSize2; i++)
         {
             double sum = 0;
-            for (int i = 0; i < hiddenSize1; i++)
+            for (int j = 0; j < hiddenSize1; j++)
             {
-                sum += hidden1[i] * weights2[i, j];
+                sum += hidden1[j] * weights2[j, i];
             }
-            hidden2[j] = Sigmoid(sum + bias2[j]);
+            hidden2[i] = Gradient(sum + bias2[i]);
         }
 
-        for (int j = 0; j < outputSize; j++)
+        double[] output = new double[outputSize];
+        for (int i = 0; i < outputSize; i++)
         {
             double sum = 0;
-            for (int i = 0; i < hiddenSize2; i++)
+            for (int j = 0; j < hiddenSize2; j++)
             {
-                sum += hidden2[i] * weights3[i, j];
+                sum += hidden2[j] * weights3[j, i];
             }
-            output = new double[outputSize];
-            output[j] = Sigmoid(sum + bias3[j]);
+            output[i] = Gradient(sum + bias3[i]);
         }
 
 
         // Propagacija unatrag
         double[] outputError = new double[outputSize];
-        for (int i = 0; i < outputSize; i++)
+        for (int j = 0; j < outputSize; j++)
         {
-            outputError[i] = (targetOutput[i] - output[i]) * output[i] * (1 - output[i]);
+            outputError[j] = (targetOutput[j] - output[j]) * output[j] * (1 - output[j]);
         }
-
 
         double[] hidden2Error = new double[hiddenSize2];
         for (int i = 0; i < hiddenSize2; i++)
@@ -419,19 +377,19 @@ class NeuralNetwork
         {
             for (int i = 0; i < hiddenSize2; i++)
             {
-                weights3[i, j] += learningRate * outputError[j] * output[j];
+                weights3[i, j] = Math.Round(weights3[i, j] + learningRate * outputError[j] * output[j], 6);
                 line3 += weights3[i, j] + " ";
             }
             bias3[j] += learningRate * outputError[j];
             lines3[j] = line3.TrimEnd();
             line3 = "";
-            }
+        }
 
         for (int j = 0; j < hiddenSize2; j++)
         {
             for (int i = 0; i < hiddenSize1; i++)
             {
-                weights2[i, j] += learningRate * hidden2Error[j] * hidden2[j];
+                weights2[i, j] = Math.Round(weights2[i, j] + learningRate * hidden2Error[j] * hidden2[j], 6);
                 line2 += weights2[i, j] + " ";
             }
             bias2[j] += learningRate * hidden2Error[j];          
@@ -443,7 +401,7 @@ class NeuralNetwork
         {
             for (int i = 0; i < inputSize; i++)
             {
-                weights1[i, j] += learningRate * hidden1Error[j] * hidden1[j];
+                weights1[i, j] = Math.Round(weights1[i, j] + learningRate * hidden1Error[j] * hidden1[j], 6);
                 line1 += weights1[i, j] + " ";
             }
             bias1[j] += learningRate * hidden1Error[j];
@@ -454,7 +412,6 @@ class NeuralNetwork
         fileContent1 = string.Join(Environment.NewLine, lines1);
         fileContent2 = string.Join(Environment.NewLine, lines2);
         fileContent3 = string.Join(Environment.NewLine, lines3);
-        
     }
 
 
