@@ -8,8 +8,8 @@ class NeuralNetwork
 { 
     // Definicija mreže.
     static int Ulaz = 5;    //  <----------------------------------------------------------------------
-    static int Size1 = 6;
-    static int Size2 = 4;
+    static int Size1 = 10;
+    static int Size2 = 8;
     static int Izlaz = 1;
 
     private int inputSize;
@@ -32,9 +32,9 @@ class NeuralNetwork
     string line2;
     string line3;
 
-    string weightsfilePath1 = @"C:\Users\Jurica\Desktop\weights1.txt";
-    string weightsfilePath2 = @"C:\Users\Jurica\Desktop\weights2.txt";
-    string weightsfilePath3 = @"C:\Users\Jurica\Desktop\weights3.txt";
+    string weightsfilePath1 = @"Weights\weights1.txt";
+    string weightsfilePath2 = @"Weights\weights2.txt";
+    string weightsfilePath3 = @"Weights\weights3.txt";
 
     string[] lines1 = new string[Size1];
     string[] lines2 = new string[Size2];
@@ -44,62 +44,119 @@ class NeuralNetwork
     string fileContent2;
     string fileContent3;
 
+    double ErrDiff = 999999999;
 
+    //Funkcija kreira weights.txt file-ove
+    public static void CreateMatrix(int m, int n, int i)
+    {
+        // Create the matrix and initialize it to all 0's.
+        double[,] matrix = new double[(int)m, (int)n];
+        for (int row = 0; row < m; row++)
+        {
+            for (int col = 0; col < n; col++)
+            {
+                matrix[row, col] = 0.0;
+            }
+        }
+
+        // Write the matrix to a file.
+        // Create the "Weights" directory if it doesn't exist.
+        string directory = "Weights";
+        if (!Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        string fileName = $"weights{i}.txt";
+        string filePath = Path.Combine(directory, fileName);
+        using (StreamWriter writer = new StreamWriter(filePath))
+        {
+            for (int row = 0; row < m; row++)
+            {
+                for (int col = 0; col < n; col++)
+                {
+                    writer.Write(matrix[row, col]);
+                    if (col < n - 1)
+                    {
+                        writer.Write(" ");
+                    }
+                }
+                writer.WriteLine();
+            }
+        }
+    }
 
     static void Main(string[] args)
-    {
+        {
+        //Kreiraj weights1.txt
+        CreateMatrix(Ulaz, Size1, 1);
+
+        //Kreiraj weights1.txt
+        CreateMatrix(Size1, Size2, 2);
+
+        //Kreiraj weights1.txt
+        CreateMatrix(Size2, Izlaz, 3);
+
+
+        System.Globalization.CultureInfo customCulture = new System.Globalization.CultureInfo("en-US");
+        System.Threading.Thread.CurrentThread.CurrentCulture = customCulture;
+
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
-        
-        // Učitavanje podataka iz Excela.
-        string filePath = @"C:\Users\Jurica\Desktop\DataSet01.xlsx";
+
+        // Učitavanje podataka iz CSV datoteke.
+        string filePath = @"Data\DataSet01.csv";
 
         List<double[]> inputs = new List<double[]>();
-        List < double[]> targetOutputs = new List<double[]>();
+        List<double[]> targetOutputs = new List<double[]>();
 
-        using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read))
-        {
-            using (var reader = ExcelReaderFactory.CreateReader(stream))
+        using (var reader = new StreamReader(filePath))
             {
-                while (reader.Read())
+                int rowNumber = 0;
+                while (!reader.EndOfStream)
                 {
+                    var line = reader.ReadLine();
+                    var values = line.Split(',');
+
+
                     // Ignoriraj redove zaglavlja.
-                    if (reader.Depth > 12)
+                    if (rowNumber > 0)
                     {
                         double[] input = new double[Ulaz];
-                        for (int m = 0; m < Ulaz; m++) {
-                            input[m] = (double)reader.GetDouble(m);
+                        for (int m = 0; m < Ulaz; m++)
+                        {
+                            input[m] = double.Parse(values[m], customCulture);
                         }
-                        
+
                         double[] output = new double[Izlaz];
                         for (int m = 0; m < Izlaz; m++)
                         {
-                            output[m] = reader.GetDouble(m + Ulaz);
+                            output[m] = double.Parse(values[m + Ulaz], customCulture);
                         }
-                       
+
                         targetOutputs.Add(output);
                         inputs.Add(input);
-
                     }
+
+                    rowNumber++;
                 }
             }
-        }
-            
+
         //Učitavanje matrica težina
-        double[,] weights1 = LoadWeight("C:/Users/Jurica/Desktop/weights1.txt");
+        double[,] weights1 = LoadWeight (@"Weights\weights1.txt");
         for (int i = 0; i < Ulaz; i++){
             for (int j = 0; j < Size1; j++)
                 Console.Write(Math.Round(weights1[i, j], 6) + " "); Console.WriteLine();
         }
         Console.WriteLine();
 
-        double[,] weights2 = LoadWeight("C:/Users/Jurica/Desktop/weights2.txt");
+        double[,] weights2 = LoadWeight(@"Weights\weights2.txt");
         for (int i = 0; i < Size1; i++){
             for (int j = 0; j < Size2; j++) 
                 Console.Write(Math.Round(weights2[i, j], 6) + " "); Console.WriteLine();
         }
         Console.WriteLine();
 
-        double[,] weights3 = LoadWeight("C:/Users/Jurica/Desktop/weights3.txt");
+        double[,] weights3 = LoadWeight(@"Weights\weights3.txt");
         for (int i = 0; i < Size2; i++){
             for (int j = 0; j < Izlaz; j++)
                 Console.Write(Math.Round(weights3[i, j], 6) + " "); Console.WriteLine();
@@ -117,22 +174,32 @@ class NeuralNetwork
         for (int j = 0; j < inputs.Count; j++)
         {
             double learningRate = 0.1;
+            bool bjeg = false;
 
-            for (int r = 0; r < 100; r++){   //   <---------------------------------------------------------------------------------- broj iteracija po istom uzorku
+            for (int r = 0; r < 10000; r++)
+            {   //   <---------------------------------------------------------------------------------- broj iteracija po istom uzorku
+                
                 if (learningRate < 0.005) learningRate = 0.005;
                 else learningRate *= 0.99;
-                
-                nn.Train(inputs[j], targetOutputs[j], learningRate, weights1, weights2, weights3);        
-
+                try{
+                    nn.Train(inputs[j], targetOutputs[j], learningRate, weights1, weights2, weights3);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(">>> Overfitting! <<<"); Console.WriteLine();
+                    bjeg = true;
+                    break;
+                }   
             }
+            if (bjeg) break;
         }
-
+        
         //Testiraj na ovom uzorku
         double[,] primjer = {
-           {  0.7, 0.65, 0.25, 0.40, 0.15 },
-           {  0,   0,    0,    0,    0    },
-           { -0.7,-0.65,-0.25,-0.40,-0.15 },
-           {-0.275041350075365,0.609512040645118,-0.83777580922789,-0.20984521389192,0.778961697337921},
+            {  0.7, 0.65, 0.25, 0.40, 0.15 },
+            {  0,   0,    0,    0,    0    },
+            { -0.7,-0.65,-0.25,-0.40,-0.15 },
+            {-0.275041350075365,0.609512040645118,-0.83777580922789,-0.20984521389192,0.778961697337921},
             {-0.275041350075365,0.609512040645118,-0.83777580922789,-0.20984521389192,0.778961697337921},
             {-0.470940876207609,0.0743824581498598,-0.477193069242254,0.572612197069567,-0.262232320822954},
             {-0.132444787928778,0.946373277203434,0.976211552101984,0.699576485845871,-0.330044130862337},
@@ -193,7 +260,6 @@ class NeuralNetwork
         //Console.ReadLine();
     }
 
-
     private NeuralNetwork(int inputSize, int hiddenSize1, int hiddenSize2, int outputSize)
     {
         this.inputSize = inputSize;
@@ -234,7 +300,6 @@ class NeuralNetwork
         }
     }
 
-
     private double Sigmoid(double x)
     {
         return  1.0 / (1.0 + Math.Exp(-x));
@@ -243,7 +308,6 @@ class NeuralNetwork
     {
         return Sigmoid(x) * ( 1 - Sigmoid(x) );
     }
-
 
     public double[] Predict(double[] input, int x, double[,] weights1, double[,] weights2, double[,] weights3)
     {
@@ -305,7 +369,6 @@ class NeuralNetwork
         File.WriteAllText(weightsfilePath2, fileContent2); TransposeMatrix(weightsfilePath2);
         File.WriteAllText(weightsfilePath1, fileContent1); TransposeMatrix(weightsfilePath1);
 
-
         // Transponira matricu
         static void TransposeMatrix(string filePath)
         {
@@ -356,10 +419,8 @@ class NeuralNetwork
             }
         }
 
-
         return output;
     }
-
 
     //Treniranje Neuralne Mreže --------------------------------------------------
     public void Train(double[] input, double[] targetOutput, double learningRate, double[,] weights1, double[,] weights2, double[,] weights3)
@@ -401,9 +462,12 @@ class NeuralNetwork
 
         // Propagacija unatrag
         double[] outputError = new double[outputSize];
+        double tmpErr = 0;
+
         for (int j = 0; j < outputSize; j++)
         {
             outputError[j] = (targetOutput[j] - output[j]) * output[j] * (1 - output[j]);
+            tmpErr += outputError[j];
         }
 
         double[] hidden2Error = new double[hiddenSize2];
@@ -468,8 +532,9 @@ class NeuralNetwork
         fileContent1 = string.Join(Environment.NewLine, lines1);
         fileContent2 = string.Join(Environment.NewLine, lines2);
         fileContent3 = string.Join(Environment.NewLine, lines3);
-    }
 
+        if (ErrDiff <= tmpErr) throw new Exception(); //provjeava Overfitting
+    }
 
     //Učitava težine iz .txt fileova
     static double[,] LoadWeight(string inputFilePath)
