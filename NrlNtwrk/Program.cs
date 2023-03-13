@@ -7,9 +7,9 @@ using static OfficeOpenXml.ExcelErrorValue;
 class NeuralNetwork
 { 
     // Definicija mreže.
-    static int Ulaz = 5;    //  <----------------------------------------------------------------------
-    static int Size1 = 10;
-    static int Size2 = 8;
+    static int Ulaz = 10;    //  <----------------------------------------------------------------------
+    static int Size1 = 20;
+    static int Size2 = 20;
     static int Izlaz = 1;
 
     private int inputSize;
@@ -45,6 +45,8 @@ class NeuralNetwork
     string fileContent3;
 
     double ErrDiff = 999999999;
+    static int Ciklus = 1;
+    static int qTrain;
 
     //Funkcija kreira weights.txt file-ove
     public static void CreateMatrix(int m, int n, int i)
@@ -87,16 +89,28 @@ class NeuralNetwork
     }
 
     static void Main(string[] args)
+    {
+        Console.Write("Train NeuralNetwork (1) or skip to Predict (0)?: ");
+        qTrain = Convert.ToInt32(Console.ReadLine());
+        if (qTrain == 1)
         {
-        //Kreiraj weights1.txt
-        CreateMatrix(Ulaz, Size1, 1);
+            Console.Write("Start from existing WeightMatrices (1) or generate new ones (0)?: "); int qWeights = Convert.ToInt32(Console.ReadLine());
 
-        //Kreiraj weights1.txt
-        CreateMatrix(Size1, Size2, 2);
+            if (qWeights == 0)
+            {
+                //Kreiraj weights1.txt
+                CreateMatrix(Ulaz, Size1, 1);
 
-        //Kreiraj weights1.txt
-        CreateMatrix(Size2, Izlaz, 3);
+                //Kreiraj weights1.txt
+                CreateMatrix(Size1, Size2, 2);
 
+                //Kreiraj weights1.txt
+                CreateMatrix(Size2, Izlaz, 3);
+            }
+
+            Console.Write("Number of training cycles?: ");
+            Ciklus = Convert.ToInt32(Console.ReadLine());
+        }
 
         System.Globalization.CultureInfo customCulture = new System.Globalization.CultureInfo("en-US");
         System.Threading.Thread.CurrentThread.CurrentCulture = customCulture;
@@ -110,7 +124,7 @@ class NeuralNetwork
         List<double[]> targetOutputs = new List<double[]>();
 
         using (var reader = new StreamReader(filePath))
-            {
+        {
                 int rowNumber = 0;
                 while (!reader.EndOfStream)
                 {
@@ -139,7 +153,7 @@ class NeuralNetwork
 
                     rowNumber++;
                 }
-            }
+        }
 
         //Učitavanje matrica težina
         double[,] weights1 = LoadWeight (@"Weights\weights1.txt");
@@ -169,71 +183,53 @@ class NeuralNetwork
 
 
         // start: Treniranje mreže.
-        
-        int epochs = Ulaz;
-        for (int j = 0; j < inputs.Count; j++)
+        if(qTrain == 1)
         {
-            double learningRate = 0.1;
-            bool bjeg = false;
+            int epochs = Ulaz;
+            for (int j = 0; j < inputs.Count; j++)
+            {
+                double learningRate = 0.25;
+                bool bjeg = false;
 
-            for (int r = 0; r < 10000; r++)
-            {   //   <---------------------------------------------------------------------------------- broj iteracija po istom uzorku
+                for (int r = 0; r < Ciklus; r++)
+                {   //   <---------------------------------------------------------------------------------- broj iteracija po istom uzorku
                 
-                if (learningRate < 0.005) learningRate = 0.005;
-                else learningRate *= 0.99;
-                try{
-                    nn.Train(inputs[j], targetOutputs[j], learningRate, weights1, weights2, weights3);
+                    if (learningRate < 0.01) learningRate = 0.01;
+                    else learningRate *= 0.9995;
+                    try{
+                        nn.Train(inputs[j], targetOutputs[j], learningRate, weights1, weights2, weights3);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine(">>> Overfitting! <<<"); Console.WriteLine();
+                        bjeg = true;
+                        break;
+                    }   
                 }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(">>> Overfitting! <<<"); Console.WriteLine();
-                    bjeg = true;
-                    break;
-                }   
+                if (bjeg) break;
             }
-            if (bjeg) break;
         }
-        
+
         //Testiraj na ovom uzorku
         double[,] primjer = {
-            {  0.7, 0.65, 0.25, 0.40, 0.15 },
-            {  0,   0,    0,    0,    0    },
-            { -0.7,-0.65,-0.25,-0.40,-0.15 },
-            {-0.275041350075365,0.609512040645118,-0.83777580922789,-0.20984521389192,0.778961697337921},
-            {-0.275041350075365,0.609512040645118,-0.83777580922789,-0.20984521389192,0.778961697337921},
-            {-0.470940876207609,0.0743824581498598,-0.477193069242254,0.572612197069567,-0.262232320822954},
-            {-0.132444787928778,0.946373277203434,0.976211552101984,0.699576485845871,-0.330044130862337},
-            {0.924109948241495,-0.813619135832025,-0.70162142206353,0.859295528989206,0.88952142232623},
-            {-0.475048263000629,0.890088138776809,-0.797315837703715,-0.899594549835415,-0.218311082104202},
-            {0.01412294726304,0.266968986226497,0.428884784375237,-0.138488191437025,0.582773174663588},
-            {0.869186035268081,0.41889337170468,-0.325843710547832,-0.337792098795935,-0.871283864762525},
-            {0.386393239292518,0.814454662164547,-0.737735249746914,0.588876136690549,-0.637288209636352},
-            {-0.741490740356795,-0.948050019690307,0.954370173242092,-0.791420584633522,0.449408181588992},
-            {-0.400263550694755,0.518755543168551,-0.908667414699385,-0.756752170934909,-0.203019824163141},
-            {0.685109568283524,-0.572582952944771,0.371628423234307,0.121135212848419,-0.714661307354033},
-            {-0.449783254862828,0.459323977001248,0.579335864048244,-0.897447537882985,0.668867336485821},
-            {-0.12671323388057,-0.622250340959255,-0.682604940112916,-0.767555352470545,0.946470298331044},
-            {-0.295490388879467,-0.981781208671966,-0.494302732780594,-0.229986255502789,0.197074790847524},
-            {-0.120691255689762,-0.0583388106645468,0.810586179674496,-0.887143738558362,0.285246455348275},
-            {0.415059097668001,-0.226507129028569,0.615706091804598,-0.287149462600236,0.358131064473005},
-            {0.808498031933762,0.604560363445248,0.228750151592554,0.619950185177681,0.0487232565733033},
-            {-0.0784774055075883,-0.0604516161928781,-0.784584585565156,-0.948087861031031,-0.656900520512969},
-            {-0.455949965426837,-0.827580224479949,-0.0961337873784271,-0.71685112320409,-0.263600853582687},
-            {0.7146347846636,0.993536914607503,0.618853688197704,0.626592551675728,0.55919726878289},
-            {0.673870657629575,0.494498261362984,0.180109037686892,-0.234524485585144,-0.631636343115023},
-            {-0.982213459886085,0.282323488658628,0.352833695175605,-0.210610750757305,0.201810379216961},
-            {-0.329185685127236,-0.673628030659662,0.273472015389684,-0.275333812253375,-0.711685250754057},
-            {0.9120980438339,-0.279572335163764,0.189635491410045,0.977571157371985,-0.917277692073761},
-            {-0.184748304709361,0.74997557592164,-0.978003665750006,0.0315159237574023,-0.984357055712029},
-            {0.619091864968979,-0.866685372981821,0.507700089103159,-0.149606486962195,0.824706343819546},
-            {0.618944426958471,-0.654155970114822,-0.421389715372646,0.125029227567311,-0.840252311573113},
-            {0.235690200253333,-0.93993489358436,0.407204608510173,-0.993079223881019,0.498041686761066},
-            {0.778776527152206,-0.791388789024887,0.303306070325474,-0.22628589772784,-0.703347186113185},
-            {-0.254609727964867,-0.844295410264514,-0.987699225039101,-0.933290471719669,-0.572145135854391}
+            {  0.972315279830527,0.374642024214942,-0.987362755776673,-0.550211203146455,0.788607188358155,0.897486042559677,0.897486042559677,0.887676263161404,-0.141606483918327,-0.126034924581164},
+            { -0.822590193090002,-0.829950048594149,0.919303705505362,-0.104787994048832,-0.799143611506213,0.769355431291827,0.769355431291827,0.280829713151262,0.152814519273307,0.650792136858826 },
+            { 0.0180173416102605,0.163539814066219,-0.78031753831957,0.924620991692989,0.489977057513468,-0.322902370718307,-0.322902370718307,0.918334829309936,0.0175477707615459,-0.857574538568424},
+            { -0.162241520603104,0.467550018912954,0.503584774405004,0.302621454351558,-0.472022306547612,-0.562927387593802,-0.562927387593802,0.755581321267899,-0.727943693132739,-0.202007532644133},
+            { 0.095282151514809,-0.927529991180237,-0.450603425779466,0.893877510741974,0.351686009547855,0.173117707646684,0.173117707646684,0.530642510022081,0.892500750634307,-0.365627601639181 },
+            { -0.00807763161823916,0.036010762709322,0.573810322741297,-0.602771749198344,-0.598629596685094,-0.72817068009583,-0.72817068009583,-0.330994627889557,-0.551537461608604,-0.664896316195539},
+            { 0.564437629958376,0.421345762891236,-0.688534848698745,0.629055958173294,0.422057358002237,0.0329316342570658,0.0329316342570658,0.560384315818087,0.504107716907942,0.413131305297761 },
+            { -0.420469366336617,0.637120561366121,0.62888638772556,0.693932139812637,0.291595714364456,0.242603724772777,0.242603724772777,-0.314153096670346,0.171132364978348,0.430001860480477 },
+            { -0.277106315691558,-0.386685987179348,-0.570390036176618,0.175345139620588,0.300479191307506,-0.0681738561201917,-0.0681738561201917,0.883986898124351,0.531021570641045,-0.430903996266799 },
+            { 0.151882095742381,-0.402516463802958,-0.892337557523416,-0.986684500213489,-0.354798839816851,-0.700418534732024,-0.700418534732024,0.973961986307434,0.252482999942402,0.911639153900963 },
+            { -0.533992322562857,-0.159563976371338,0.870878756696713,0.687410612854526,0.734772640549174,-0.598173712359326,-0.598173712359326,0.478471252393423,-0.646216993107023,0.322958005653977 },
+            { 0.245996705236797,-0.673632429800152,-0.193009831503513,0.951960423305128,-0.901811771194054,0.795672572647149,0.795672572647149,0.607335307082253,0.781713430136677,0.379359954504645 },
+            { -0.716406356778469,0.342288607405709,0.704905800097272,0.719065492508729,0.407180036063208,-0.871458188322933,-0.871458188322933,-0.518344716321813,0.680253999722748,-0.557448281130896 },
+            { 0.88703542756185,-0.144216169215548,-0.679668687689177,0.995030238813455,-0.506271038165337,-0.318888703150188,-0.318888703150188,0.363771548826103,-0.382860066535434,0.919266629107762}
         };
         
         double[] Row = new double[primjer.GetLength(1)];
-        for (int red = 0; red < primjer.GetLength(0); red++) //    <--------------------------------------------------------------BROJ REDOVA (UNESENIH PRIMJERA) !!!!!!!!!!!!!!!!
+        for (int red = 0; red < primjer.GetLength(0); red++)
         {           
             for (int i = 0; i < primjer.GetLength(1); i++)
             {
@@ -250,14 +246,15 @@ class NeuralNetwork
                 return 1- 1 / (1 + Math.Exp(-Sgm));
             }
 
-            double[] OutputedVals = nn.Predict(Row, 0, weights1, weights2, weights3); //  <------------------------------------------------------------------------ 0 (ili 1 za detalje)
+            double[] OutputedVals = nn.Predict(Row, weights1, weights2, weights3);
             
             Console.WriteLine(Math.Round(OutputedVals[0]*100, 6) + " %.");
            
             Console.WriteLine(" ---> " + Math.Round(SigmoidajRedak(Row)*100, 2) + " %."); 
             Console.WriteLine("-------------");
         }
-        //Console.ReadLine();
+        Console.WriteLine("Done.");
+        Console.ReadLine();
     }
 
     private NeuralNetwork(int inputSize, int hiddenSize1, int hiddenSize2, int outputSize)
@@ -309,7 +306,7 @@ class NeuralNetwork
         return Sigmoid(x) * ( 1 - Sigmoid(x) );
     }
 
-    public double[] Predict(double[] input, int x, double[,] weights1, double[,] weights2, double[,] weights3)
+    public double[] Predict(double[] input, double[,] weights1, double[,] weights2, double[,] weights3)
     {
         // Propagacija ulaza kroz mrežu.
         double[] hidden1 = new double[hiddenSize1];
@@ -344,30 +341,14 @@ class NeuralNetwork
             }
             output[i] = Sigmoid(sum + bias3[i]);
         }
-
-        if (x == 1) {
-            Console.WriteLine("Hidden layer 1 values:");
-            for (int i = 0; i < hiddenSize1; i++)
-            {
-                Console.WriteLine($"Node {i + 1}: {hidden1[i]}");
-            }
-
-            Console.WriteLine("\nHidden layer 2 values:");
-            for (int i = 0; i < hiddenSize2; i++)
-            {
-                Console.WriteLine($"Node {i + 1}: {hidden2[i]}");
-            }
-
-            Console.WriteLine("\nOutput values:");
-            for (int i = 0; i < outputSize; i++)
-            {
-                Console.WriteLine($"Node {i + 1}: {output[i]}");
-            }
-        }
         
-        File.WriteAllText(weightsfilePath3, fileContent3); TransposeMatrix(weightsfilePath3);
-        File.WriteAllText(weightsfilePath2, fileContent2); TransposeMatrix(weightsfilePath2);
-        File.WriteAllText(weightsfilePath1, fileContent1); TransposeMatrix(weightsfilePath1);
+        if(qTrain == 1)
+        {
+            File.WriteAllText(weightsfilePath3, fileContent3); TransposeMatrix(weightsfilePath3);
+            File.WriteAllText(weightsfilePath2, fileContent2); TransposeMatrix(weightsfilePath2);
+            File.WriteAllText(weightsfilePath1, fileContent1); TransposeMatrix(weightsfilePath1);
+        }
+
 
         // Transponira matricu
         static void TransposeMatrix(string filePath)
@@ -418,7 +399,6 @@ class NeuralNetwork
                 }
             }
         }
-
         return output;
     }
 
