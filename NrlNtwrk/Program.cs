@@ -87,7 +87,8 @@ class NeuralNetwork
 
     static void Main(string[] args)
     {
-        if (r > 1)
+        // Kreiraj matrice težina
+        if (r > 0)
         {
             //Kreiraj weights1.txt
             CreateMatrix(INPUT, Size1, 1);
@@ -97,7 +98,7 @@ class NeuralNetwork
 
             //Kreiraj weights1.txt
             CreateMatrix(Size2, OUTPUT, 3);
-        }// Rekreiraj matrice težina
+        }
 
         System.Globalization.CultureInfo customCulture = new System.Globalization.CultureInfo("en-US");
         System.Threading.Thread.CurrentThread.CurrentCulture = customCulture;
