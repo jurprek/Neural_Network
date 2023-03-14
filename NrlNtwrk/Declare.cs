@@ -1,6 +1,6 @@
 ﻿partial class NeuralNetwork
 {
-    // Define NeuralNetwork.
+    // Define Neural Network.
     private static int INPUT = 10;
     private static int Size1 = 20;
     private static int Size2 = 20;
