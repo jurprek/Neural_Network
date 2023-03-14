@@ -6,89 +6,38 @@ using System.Linq;
 using ExcelDataReader;
 using static OfficeOpenXml.ExcelErrorValue;
 
-class NeuralNetwork
+partial class NeuralNetwork
 {
-    // Define NeuralNetwork.
-    static int INPUT = 10;    //  <----------------------------------------------------------------------
-    static int Size1 = 20;
-    static int Size2 = 20;
-    static int OUTPUT = 1;
-    static int CycleNumber = 0;
+    private static double[] output = new double[OUTPUT];
+    private static double[] hidden1 = new double[Size1];
+    private static double[] hidden2 = new double[Size2];
+    private static double[] bias1 = new double[Size1];
+    private static double[] bias2 = new double[Size2];
+    private static double[] bias3 = new double[OUTPUT];
 
-    static double[] output = new double[OUTPUT];
-    static double[] hidden1 = new double[Size1];
-    static double[] hidden2 = new double[Size2];
-    static double[] bias1;
-    static double[] bias2;
-    static double[] bias3;
+    private static double[,] weights1 = new double[INPUT, Size1];
+    private static double[,] weights2 = new double[Size1, Size2];
+    private static double[,] weights3 = new double[Size2, OUTPUT];
 
-    static double[,] weights1 = new double[INPUT, Size1];
-    static double[,] weights2 = new double[Size1, Size2];
-    static double[,] weights3 = new double[Size2, OUTPUT];
+    private static string line1 = "";
+    private static string line2 = "";
+    private static string line3 = "";
+    private static string bline1 = "";
+    private static string bline2 = "";
+    private static string bline3 = "";
 
-    string line1;
-    string line2;
-    string line3;
-    string bline1;
-    string bline2;
-    string bline3;
+    private static string[] lines1 = new string[Size1];
+    private static string[] lines2 = new string[Size2];
+    private static string[] lines3 = new string[OUTPUT];
 
-    string weightsfilePath1 = @"Weights\weights1.txt";
-    string weightsfilePath2 = @"Weights\weights2.txt";
-    string weightsfilePath3 = @"Weights\weights3.txt";
+    private static string fileContent1 = "";
+    private static string fileContent2 = "";
+    private static string fileContent3 = "";
 
-    string[] lines1 = new string[Size1];
-    string[] lines2 = new string[Size2];
-    string[] lines3 = new string[OUTPUT];
-
-    string fileContent1;
-    string fileContent2;
-    string fileContent3;
-
-    double ErrDiff = 999999999;
-    static int r = 0;
-    static int p;
-    static int t = 0;
-
-    //Function creates weights.txt files
-    public static void CreateMatrix(int m, int n, int i)
-    {
-        // Create the matrix and initialize it to all 0's.
-        double[,] matrix = new double[(int)m, (int)n];
-        for (int row = 0; row < m; row++)
-        {
-            for (int col = 0; col < n; col++)
-            {
-                matrix[row, col] = 0.0;
-            }
-        }
-
-        // Write the matrix to a file.
-        // Create the "Weights" directory if it doesn't exist.
-        string directory = "Weights";
-        if (!Directory.Exists(directory))
-        {
-            Directory.CreateDirectory(directory);
-        }
-
-        string fileName = $"weights{i}.txt";
-        string filePath = Path.Combine(directory, fileName);
-        using (StreamWriter writer = new StreamWriter(filePath))
-        {
-            for (int row = 0; row < m; row++)
-            {
-                for (int col = 0; col < n; col++)
-                {
-                    writer.Write(matrix[row, col]);
-                    if (col < n - 1)
-                    {
-                        writer.Write(" ");
-                    }
-                }
-                writer.WriteLine();
-            }
-        }
-    }
+    private static double ErrDiff = 999999999;
+    private static int r = 0;
+    private static int p;
+    private static int t = 0;
 
     static void Main(string[] args)
     {
@@ -106,24 +55,21 @@ class NeuralNetwork
             //Kreiraj weights1.txt
             CreateMatrix(Size2, OUTPUT, 3);
        
-
         System.Globalization.CultureInfo customCulture = new System.Globalization.CultureInfo("en-US");
         System.Threading.Thread.CurrentThread.CurrentCulture = customCulture;
-
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-        // Učitavanje podataka iz CSV datoteke.
-        string filePath = @"Data\DataSet01.csv";
-
-
-        using (var reader = new StreamReader(filePath))
+        using (var reader = new StreamReader(DatafilePath))
         {
             int rowNumber = 0;
             while (!reader.EndOfStream)
             {
                 var line = reader.ReadLine();
-                var values = line.Split(',');
-
+                var values = new string[0];
+                if (line != null)
+                {
+                    values = line.Split(',');
+                }
 
                 // Ignoriraj redove zaglavlja.
                 if (rowNumber > 0)
@@ -150,9 +96,9 @@ class NeuralNetwork
         }
  }
         //Učitavanje matrica težina i biasa
-        
-            string fileContents1 = System.IO.File.ReadAllText(@"Weights\weights1.txt");
-            double[][] weightsArray1 = fileContents1
+
+        string fileContents1 = System.IO.File.ReadAllText(weightsfilePath1);
+        double[][] weightsArray1 = fileContents1
                 .Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(line => line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
                     .Select(val => Double.Parse(val, CultureInfo.InvariantCulture))
@@ -167,7 +113,7 @@ class NeuralNetwork
                 }
            }
 
-            string fileContents2 = System.IO.File.ReadAllText(@"Weights\weights2.txt");
+            string fileContents2 = System.IO.File.ReadAllText(weightsfilePath2);
             double[][] weightsArray2 = fileContents2
                 .Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(line => line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
@@ -183,7 +129,7 @@ class NeuralNetwork
                 }
             }
 
-            string fileContents3 = System.IO.File.ReadAllText(@"Weights\weights3.txt");
+            string fileContents3 = System.IO.File.ReadAllText(weightsfilePath3);
             double[][] weightsArray3 = fileContents3
                 .Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
                 .Select(line => line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
@@ -243,7 +189,7 @@ class NeuralNetwork
                 {
                     nn.Train(inputs[j], targetOutputs[j], learningRate, weights1, weights2, weights3);
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
                     Console.WriteLine(">>> Overfitting! <<<"); Console.WriteLine();
                     bjeg = true;
@@ -301,33 +247,7 @@ class NeuralNetwork
         Console.ReadLine();
     }
 
-    private NeuralNetwork(int inputSize, int hiddenSize1, int hiddenSize2, int outputSize)
-    {
-        // Inicijalizacija
-        Random rand = new Random();
-
-        hidden1 = new double[hiddenSize1];
-        for (int i = 0; i < hiddenSize1; i++)
-        {
-            hidden1[i] = 0; // set each element to 0
-        }
-        hidden2 = new double[hiddenSize2];
-        for (int i = 0; i < hiddenSize2; i++)
-        {
-            hidden2[i] = 0; // set each element to 0
-        }
-    }
-
-    private double Sigmoid(double x)
-    {
-        return 1.0 / (1.0 + Math.Exp(-x));
-    }
-    private double Gradient(double x)
-    {
-        return Sigmoid(x) * (1 - Sigmoid(x));
-    }
-
-    public double[] Predict(double[] input, double[,] weights1, double[,] weights2, double[,] weights3, double[] bias1, double[] bias2, double[] bias3)
+    private double[] Predict(double[] input, double[,] weights1, double[,] weights2, double[,] weights3, double[] bias1, double[] bias2, double[] bias3)
     {
         // Propagacija INPUTa kroz mrežu.
         for (int i = 0; i < Size1; i++)
@@ -362,8 +282,7 @@ class NeuralNetwork
         return output;
     }
 
-    //TRAINING function --------------------------------------------------
-    public void Train(double[] input, double[] targetOutput, double learningRate, double[,] weights1, double[,] weights2, double[,] weights3)
+    private void Train(double[] input, double[] targetOutput, double learningRate, double[,] weights1, double[,] weights2, double[,] weights3)
     {
         // Propagacija unaprijed
         Predict(input, weights1, weights2, weights3, bias1, bias2, bias3);
@@ -455,9 +374,9 @@ class NeuralNetwork
         }
 
         // Transponira matricu
-        static void TransposeMatrix(string filePath)
+        static void TransposeMatrix(string localfilePath)
         {
-            string[] lines = File.ReadAllLines(filePath);
+            string[] lines = File.ReadAllLines(localfilePath);
 
             // Get the number of rows and columns
             int rows = lines.Length;
@@ -484,7 +403,7 @@ class NeuralNetwork
             }
 
             // Write the transposed matrix to the file
-            using (StreamWriter writer = new StreamWriter(filePath))
+            using (StreamWriter writer = new StreamWriter(localfilePath))
             {
                 for (int i = 0; i < columns; i++)
                 {
@@ -505,9 +424,64 @@ class NeuralNetwork
         }
         if (ErrDiff <= tmpErr) throw new Exception(); //provjeava Overfitting
     }
+    
+    private NeuralNetwork(int inputSize, int hiddenSize1, int hiddenSize2, int outputSize)
+    {
+        // Inicijalizacija
+        Random rand = new Random();
 
-    //Loading Weights from Weight files (.txt)
-    static double[,] LoadWeight(string inputFilePath)
+        hidden1 = new double[hiddenSize1];
+        for (int i = 0; i < hiddenSize1; i++)
+        {
+            hidden1[i] = 0; // set each element to 0
+        }
+        hidden2 = new double[hiddenSize2];
+        for (int i = 0; i < hiddenSize2; i++)
+        {
+            hidden2[i] = 0; // set each element to 0
+        }
+    }
+
+    private static void CreateMatrix(int m, int n, int i)
+    {
+        // Create the matrix and initialize it to all 0's.
+        double[,] matrix = new double[(int)m, (int)n];
+        for (int row = 0; row < m; row++)
+        {
+            for (int col = 0; col < n; col++)
+            {
+                matrix[row, col] = 0.0;
+            }
+        }
+
+        // Write the matrix to a file.
+        // Create the "Weights" directory if it doesn't exist.
+        string directory = "Weights";
+        if (!Directory.Exists(directory))
+        {
+            Directory.CreateDirectory(directory);
+        }
+
+        string fileName = $"weights{i}.txt";
+        string DatafilePath = Path.Combine(directory, fileName);
+        using (StreamWriter writer = new StreamWriter(DatafilePath))
+        {
+            for (int row = 0; row < m; row++)
+            {
+                for (int col = 0; col < n; col++)
+                {
+                    writer.Write(matrix[row, col]);
+                    if (col < n - 1)
+                    {
+                        writer.Write(" ");
+                    }
+                }
+                writer.WriteLine();
+            }
+        }
+    }
+
+    private static double[,] LoadWeight(string inputFilePath)
     {
         // Read the input file
         string[] inputLines = File.ReadAllLines(inputFilePath);
@@ -530,5 +504,15 @@ class NeuralNetwork
         }
 
         return matrix;
+    }
+
+    private double Sigmoid(double x)
+    {
+        return 1.0 / (1.0 + Math.Exp(-x));
+    }
+
+    private double Gradient(double x)
+    {
+        return Sigmoid(x) * (1 - Sigmoid(x));
     }
 }
