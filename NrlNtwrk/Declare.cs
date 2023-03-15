@@ -2,10 +2,10 @@
 {
     // Define Neural Network.
     private static int INPUT = 5;
-    private static int Size1 = 6;
-    private static int Size2 = 4;
+    private static int Size1 = 16;
+    private static int Size2 = 11;
     private static int OUTPUT = 1;
-    private static int CycleNumber = 10;
+    private static int CycleNumber = 100000;
 
     // Load data from .CSV & .txt files.
     private static string DatafilePath = @"Data\Titanic.csv";
