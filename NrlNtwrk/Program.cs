@@ -39,6 +39,9 @@ partial class NeuralNetwork
     private static int p;
     private static int t = 0;
 
+    //Inicijalizacija Neuralne Mreže ----------------------------------
+    static NeuralNetwork nn = new NeuralNetwork(INPUT, Size1, Size2, OUTPUT);//
+
     static void Main(string[] args)
     {
      
@@ -57,8 +60,9 @@ partial class NeuralNetwork
 
             //Kreiraj Biases.txt
             CreateBiases(Size1, Size2, OUTPUT);
+        }
 
-            System.Globalization.CultureInfo customCulture = new System.Globalization.CultureInfo("en-US");
+        System.Globalization.CultureInfo customCulture = new System.Globalization.CultureInfo("en-US");
         System.Threading.Thread.CurrentThread.CurrentCulture = customCulture;
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
@@ -66,7 +70,7 @@ partial class NeuralNetwork
         {
             int rowNumber = 0;
             while (!reader.EndOfStream)
-            {
+                {
                 var line = reader.ReadLine();
                 var values = new string[0];
                 if (line != null)
@@ -91,15 +95,15 @@ partial class NeuralNetwork
 
                     targetOutputs.Add(output);
                     inputs.Add(input);
-                }
+                 }
 
                 rowNumber++;
                 p = rowNumber;
+                }
             }
-        }
- }
-        //Učitavanje matrica težina i biasa
+        
 
+        //Učitavanje matrica težina i biasa
         string fileContents1 = System.IO.File.ReadAllText(weightsfilePath1);
         double[][] weightsArray1 = fileContents1
                 .Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
@@ -171,108 +175,108 @@ partial class NeuralNetwork
                 .Select(s => Double.Parse(s, CultureInfo.InvariantCulture))
                 .ToArray();
 
-        //Inicijalizacija Neuralne Mreže ----------------------------------
-        NeuralNetwork nn = new NeuralNetwork(INPUT, Size1, Size2, OUTPUT);//
-        //-----------------------------------------------------------------
-
         // start: Treniranje mreže.
-        if (CycleNumber > 0){ 
-        int epochs = INPUT;
-        for (int j = 0; j < inputs.Count; j++)
-        {
-            double learningRate = 0.50;
-            bool bjeg = false;
-
+        Random random = new Random();
+        if (CycleNumber > 0){             
+            double learningRate = 0.1;
+            int epochs = INPUT;
             for (r = 0; r < CycleNumber; r++)
-            {   //   <---------------------------------------------------------------------------------- broj iteracija po istom uzorku
-
-                if (learningRate < 0.01) learningRate = 0.01;
-                else learningRate *= 0.995;
-                try
-                {
-                    nn.Train(inputs[j], targetOutputs[j], learningRate, weights1, weights2, weights3);
+            {
+                bool bjeg = false;
+                for (int j = 0; j < inputs.Count; j++)
+                {   //   <---------------------------------------------------------------------------------- broj iteracija po istom uzorku
+                    
+                    try
+                    {
+                        nn.Train(inputs[j], targetOutputs[j], learningRate, weights1, weights2, weights3);
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine(">>> Overfitting! <<< (after Cyclus: " + r + "/" + CycleNumber + ")"); Console.WriteLine();
+                        bjeg = true;
+                        break;
+                    }
+                    t++;
                 }
-                catch (Exception)
-                {
-                    Console.WriteLine(">>> Overfitting! <<<"); Console.WriteLine();
-                    bjeg = true;
-                    break;
-                }
-                t++;
+                if (bjeg) break;
             }
-            if (bjeg) break;
         }
-        }
+        Printout();
+   }
+        static private void Printout() {
 
         //Testiraj na ovom uzorku
         double[,] primjer = {
-            { 1,0.781640136615092,0.377540668798145,0.401312339887548,1 },   //11
-            { 1,0.423847173228711,0.377540668798145,0.450166002687522,1 },   //11
-            { 1,0.447321223770207,0.377540668798145,0.466715961748869,0 },   //10
-            { 0,0.331812227831834,0.377540668798145,0.841130895119085,0 },   //10
-            { 0,0.322840161187185,0.377540668798145,0,0 },                   //00
-            { 0,0.813847686078649,0.377540668798145,0.450166002687522,1 },   //00
-            { 1,0.813847686078649,0.377540668798145,0.660756368765817,1 },   //11
-            { 1,0.441005324252225,0.377540668798145,0.516660496569411,1 },   //11
-            { 0,0.438418494318759,0.377540668798145,0.549833997312478,1 },   //00
-            { 0,0.383561639011043,0.377540668798145,0.558070105873953,0 },   //10
-            { 1,0.383561639011043,0.377540668798145,0.637993670660984,0 },   //10
-            { 0,0.331812227831834,0.377540668798145,0.466715961748869,1 },   //10
-            { 1,0.781640136615092,0.377540668798145,0.598687660112452,1 },   //11
-            { 1,0.771674749039444,0.377540668798145,0.491667438185881,0 },   //10
-            { 0,0.323004143761477,0.377540668798145,0.4584295167832,1 },     //00
-            { 0,0.477712778307445,0.377540668798145,0.4584295167832,1 },     //10
-            { 1,0.477712778307445,0.377540668798145,0.409346717299114,1 },   //11
-            { 1,0.58815246782807,0.377540668798145,0.5415704832168,0 },      //10
-            { 0,0.324208011232084,0.377540668798145,0.483339503430589,0 },   //10
-            { 0,0.344117158792186,0.377540668798145,0.622459331201855,0 },   //00
-            { 0,0.33403307324818,0.377540668798145,0.582570206462315,1 },    //10
-            { 1,0.656710011331464,0.377540668798145,0.5,0 },                 //10
-            { 1,0.324208011232084,0.377540668798145,0.71775105695774,0 },    //10
-            { 0,0.324208011232084,0.377540668798145,0.598687660112452,0 },   //00
-            { 1,0.835311651549435,0.377540668798145,0.622459331201855,1 },   //11
-            { 1,0.389360766050778,0.377540668798145,0.433725605804561,0, },  //10
-            { 0,0.324208011232084,0.377540668798145,0,0 },                   //10
-            { 0,0.332921722904375,0.377540668798145,0.590653282700886,0 },   //00
-            { 0,0.378706522667112,0.377540668798145,0.645656306225795,1 },   //00
-            { 0,0.353429090902552,0.377540668798145,0,1 },                   //00
-            { 1,0.326778462045695,0.377540668798145,0.61459449826755,1 },    //11
-            { 1,0.381023088331113,0.377540668798145,0.724454595424802,0 },   //10
-            { 1,0.441005324252225,0.377540668798145,0.731058578630005,1 },   //11
-            { 1,0.585404569129465,0.377540668798145,0.590653282700886,1 },   //11
-            { 0,0.324208011232084,0.377540668798145,0.622459331201855,0 }    //00
+            { 1,0.781640136615092,0.377540668798145,0.401312339887548,1 },   // 1
+            { 1,0.423847173228711,0.377540668798145,0.450166002687522,1 },   // 1
+            { 1,0.447321223770207,0.377540668798145,0.466715961748869,0 },   // 1
+            { 0,0.331812227831834,0.377540668798145,0.841130895119085,0 },   // 1
+            { 0,0.322840161187185,0.377540668798145,0,0 },                   // 0
+            { 0,0.813847686078649,0.377540668798145,0.450166002687522,1 },   // 0
+            { 1,0.813847686078649,0.377540668798145,0.660756368765817,1 },   // 1
+            { 1,0.441005324252225,0.377540668798145,0.516660496569411,1 },   // 1
+            { 0,0.438418494318759,0.377540668798145,0.549833997312478,1 },   // 0
+            { 0,0.383561639011043,0.377540668798145,0.558070105873953,0 },   // 1
+            { 1,0.383561639011043,0.377540668798145,0.637993670660984,0 },   // 1
+            { 0,0.331812227831834,0.377540668798145,0.466715961748869,1 },   // 1
+            { 1,0.781640136615092,0.377540668798145,0.598687660112452,1 },   // 1
+            { 1,0.771674749039444,0.377540668798145,0.491667438185881,0 },   // 1
+            { 0,0.323004143761477,0.377540668798145,0.4584295167832,1 },     // 0
+            { 0,0.477712778307445,0.377540668798145,0.4584295167832,1 },     // 1
+            { 1,0.477712778307445,0.377540668798145,0.409346717299114,1 },   // 1
+            { 1,0.58815246782807,0.377540668798145,0.5415704832168,0 },      // 1
+            { 0,0.324208011232084,0.377540668798145,0.483339503430589,0 },   // 1
+            { 0,0.344117158792186,0.377540668798145,0.622459331201855,0 },   // 0
+            { 0,0.33403307324818,0.377540668798145,0.582570206462315,1 },    // 1
+            { 1,0.656710011331464,0.377540668798145,0.5,0 },                 // 1
+            { 1,0.324208011232084,0.377540668798145,0.71775105695774,0 },    // 1
+            { 0,0.324208011232084,0.377540668798145,0.598687660112452,0 },   // 0
+            { 1,0.835311651549435,0.377540668798145,0.622459331201855,1 },   // 1
+            { 1,0.389360766050778,0.377540668798145,0.433725605804561,0, },  // 1
+            { 0,0.324208011232084,0.377540668798145,0,0 },                   // 1
+            { 0,0.332921722904375,0.377540668798145,0.590653282700886,0 },   // 0
+            { 0,0.378706522667112,0.377540668798145,0.645656306225795,1 },   // 0
+            { 0,0.353429090902552,0.377540668798145,0,1 },                   // 0
+            { 1,0.326778462045695,0.377540668798145,0.61459449826755,1 },    // 1
+            { 1,0.381023088331113,0.377540668798145,0.724454595424802,0 },   // 1
+            { 1,0.441005324252225,0.377540668798145,0.731058578630005,1 },   // 1
+            { 1,0.585404569129465,0.377540668798145,0.590653282700886,1 },   // 1
+            { 0,0.324208011232084,0.377540668798145,0.622459331201855,0 }    // 0
         };
+
         double[] Row = new double[primjer.GetLength(1)];
-        for (int red = 0; red < primjer.GetLength(0); red++)
-        {
-            for (int i = 0; i < primjer.GetLength(1); i++)
+            for (int red = 0; red < primjer.GetLength(0); red++)
             {
-                Row[i] = primjer[red, i];
-            }
-
-            double SigmoidajRedak(double[] x)
-            {
-                double Sgm = 0;
-                for (int i = 0; i < INPUT; i++)
+                for (int i = 0; i < primjer.GetLength(1); i++)
                 {
-                    Sgm += x[i];
+                    Row[i] = primjer[red, i];
                 }
-                return 1 - 1 / (1 + Math.Exp(-Sgm));
+
+                double SigmoidajRedak(double[] x)
+                {
+                    double Sgm = 0;
+                    for (int i = 0; i < INPUT; i++)
+                    {
+                        Sgm += x[i];
+                    }
+                    return 1 - 1 / (1 + Math.Exp(-Sgm));
+                }
+
+                double[] OutputedVals = nn.Predict(Row, weights1, weights2, weights3, bias1, bias2, bias3);
+
+                Console.WriteLine(Math.Round(OutputedVals[0] * 100, 6) + " %.");
+
+                //Console.WriteLine(" ---> " + Math.Round(SigmoidajRedak(Row) * 100, 2) + " %.");
+                Console.WriteLine("-------------");
             }
-
-            double[] OutputedVals = nn.Predict(Row, weights1, weights2, weights3, bias1, bias2, bias3);
-
-            Console.WriteLine(Math.Round(OutputedVals[0] * 100, 6) + " %.");
-
-            //Console.WriteLine(" ---> " + Math.Round(SigmoidajRedak(Row) * 100, 2) + " %.");
-            Console.WriteLine("-------------");
+            Console.WriteLine("Done.");
+            Console.ReadLine();
         }
-        Console.WriteLine("Done.");
-        Console.ReadLine();
-    }
+        
+ 
 
     private double[] Predict(double[] input, double[,] weights1, double[,] weights2, double[,] weights3, double[] bias1, double[] bias2, double[] bias3)
-    {
+    {          
         // Propagacija INPUTa kroz mrežu.
         for (int i = 0; i < Size1; i++)
         {
@@ -303,23 +307,28 @@ partial class NeuralNetwork
             }
             output[i] = Sigmoid(sum + bias3[i]);
         }
+
         return output;
     }
 
     private void Train(double[] input, double[] targetOutput, double learningRate, double[,] weights1, double[,] weights2, double[,] weights3)
-    {
+    {   
         // Propagacija unaprijed
         Predict(input, weights1, weights2, weights3, bias1, bias2, bias3);
 
         // Propagacija unatrag
+        double tmpErr = 1;
         double[] outputError = new double[OUTPUT];
-        double tmpErr = 0;
 
         for (int j = 0; j < OUTPUT; j++)
         {
             outputError[j] = (targetOutput[j] - output[j]) * output[j] * (1 - output[j]);
-            tmpErr += outputError[j];
+            tmpErr *= (Math.Pow(2, 1 + output[j]));
         }
+
+        if (ErrDiff <= tmpErr * Overfitting)//provjeava Overfitting
+            throw new Exception(); 
+        ErrDiff = tmpErr;
 
         double[] hidden2Error = new double[Size2];
         for (int i = 0; i < Size2; i++)
@@ -445,8 +454,7 @@ partial class NeuralNetwork
                     }
                 }
             }
-        }
-        if (ErrDiff <= tmpErr) throw new Exception(); //provjeava Overfitting
+        }        
     }
     
     private NeuralNetwork(int inputSize, int hiddenSize1, int hiddenSize2, int outputSize)
@@ -467,14 +475,14 @@ partial class NeuralNetwork
     }
 
     private static void CreateMatrix(int m, int n, int i)
-    {
+    {       
         // Create the matrix and initialize it to all 0's.
         double[,] matrix = new double[(int)m, (int)n];
         for (int row = 0; row < m; row++)
         {
             for (int col = 0; col < n; col++)
             {
-                matrix[row, col] = 0.0;
+                matrix[row, col] = 0;
             }
         }
 
@@ -557,6 +565,7 @@ partial class NeuralNetwork
 
     private double Sigmoid(double x)
     {
+        x = 100 / (1.0 + Math.Exp(-x / 10000)) - 50;
         return 1.0 / (1.0 + Math.Exp(-x));
     }
 
