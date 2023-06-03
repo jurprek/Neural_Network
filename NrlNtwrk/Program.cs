@@ -4,6 +4,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using ExcelDataReader;
+using OfficeOpenXml.FormulaParsing.Excel.Functions.DateTime;
 using static OfficeOpenXml.ExcelErrorValue;
 
 partial class NeuralNetwork
@@ -34,43 +35,170 @@ partial class NeuralNetwork
     private static string fileContent2 = "";
     private static string fileContent3 = "";
 
-    private static double ErrDiff = 999999999;
+    private static double minErr = 999999999;
     private static int r = 0;
     private static int p;
+    private static int k;
     private static int t = 0;
+    private static bool stop_learning = false;
+    private static double sumErr = 0.1;
+    private static double SumValOutput = 0;
+    private static double learningRate = 0.50;
 
     //Inicijalizacija Neuralne Mreže ----------------------------------
     static NeuralNetwork nn = new NeuralNetwork(INPUT, Size1, Size2, OUTPUT);//
 
+    static List<double[]> inputs = new List<double[]>();
+    static List<double[]> targetOutputs = new List<double[]>();   // Kreiraj matrice težina
+
     static void Main(string[] args)
     {
-     
-        List<double[]> inputs = new List<double[]>();
-        List<double[]> targetOutputs = new List<double[]>();   // Kreiraj matrice težina
+
+
         if (CycleNumber > 0)
         {
             //Kreiraj weights1.txt
             CreateMatrix(INPUT, Size1, 1);
 
-            //Kreiraj weights1.txt
+            //Kreiraj weights2.txt
             CreateMatrix(Size1, Size2, 2);
 
-            //Kreiraj weights1.txt
+            //Kreiraj weights3.txt
             CreateMatrix(Size2, OUTPUT, 3);
 
             //Kreiraj Biases.txt
             CreateBiases(Size1, Size2, OUTPUT);
         }
 
+        ReadFilesData(TrainDataPath);
+
+        //Učitavanje matrica težina i biasa
+        string fileContents1 = System.IO.File.ReadAllText(weightsfilePath1);
+        double[][] weightsArray1 = fileContents1
+                .Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(line => line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                    .Select(val => Double.Parse(val, CultureInfo.InvariantCulture))
+                    .ToArray())
+                .ToArray();
+
+        for (int i = 0; i < weightsArray1.Length; i++)
+        {
+            for (int j = 0; j < weightsArray1[i].Length; j++)
+            {
+                weights1[i, j] = weightsArray1[i][j];
+            }
+        }
+
+        string fileContents2 = System.IO.File.ReadAllText(weightsfilePath2);
+        double[][] weightsArray2 = fileContents2
+            .Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(val => Double.Parse(val, CultureInfo.InvariantCulture))
+                .ToArray())
+            .ToArray();
+
+        for (int i = 0; i < weightsArray2.Length; i++)
+        {
+            for (int j = 0; j < weightsArray2[i].Length; j++)
+            {
+                weights2[i, j] = weightsArray2[i][j];
+            }
+        }
+
+        string fileContents3 = System.IO.File.ReadAllText(weightsfilePath3);
+        double[][] weightsArray3 = fileContents3
+            .Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            .Select(line => line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(val => Double.Parse(val, CultureInfo.InvariantCulture))
+                .ToArray())
+            .ToArray();
+
+        for (int i = 0; i < weightsArray3.Length; i++)
+        {
+            for (int j = 0; j < weightsArray3[i].Length; j++)
+            {
+                weights3[i, j] = weightsArray3[i][j];
+            }
+        }
+
+        //Load Biases
+        string path1 = Path.Combine("Weights", "Biases.txt");
+        string firstLine = File.ReadLines(path1).First();
+
+        bias1 = firstLine.Split(' ')
+            .Select(s => Double.Parse(s, CultureInfo.InvariantCulture))
+            .ToArray();
+
+        string path2 = Path.Combine("Weights", "Biases.txt");
+        string secondLine = File.ReadLines(path2).Skip(1).First();
+
+        bias2 = secondLine.Split(' ')
+            .Select(s => Double.Parse(s, CultureInfo.InvariantCulture))
+            .ToArray();
+
+
+        string path3 = Path.Combine("Weights", "Biases.txt");
+        string thirdLine = File.ReadLines(path3).Skip(2).First();
+
+        bias3 = thirdLine.Split(' ')
+            .Select(s => Double.Parse(s, CultureInfo.InvariantCulture))
+            .ToArray();
+
+        // start: Treniranje mreže.
+        Random random = new Random();
+        if (CycleNumber > 0) {
+            int epochs = INPUT;
+            for (r = 0; r < CycleNumber; r++)
+            {
+                Console.Clear(); Console.Write((r + 1) + " / " + CycleNumber + "   -  " + learningRate + "; minErr: " + minErr + ", SumErr: " + sumErr / p + ", SumValOutput/p:" + (SumValOutput / p) + ", " + "k:" + k);
+                bool bjeg = false;
+                if (stop_learning && r > 5) { Console.WriteLine("    Asimpthotic Error, overfitting... " + minErr); bjeg = true; break; }
+                sumErr = 0.1;
+
+                k = 0;
+                int w = 0;
+                for (int i = 0; i < p; i++)
+                {
+                    if (Math.Abs((SumValOutput / p) - output[0]) > 0.05) w = 1; else w = 0;
+                    k += w;
+                    //Console.WriteLine((SumValOutput/p) + ", " + output[0] + ", " + k + ", " + w);
+                }
+
+                SumValOutput = 0;
+                for (int j = 0; j < inputs.Count; j++)
+                {   //   <---------------------------------------------------------------------------------- broj iteracija po istom uzorku
+
+                    try
+                    {
+                        SumValOutput += output[0];// Console.WriteLine(SumValOutput);
+                        nn.Train(inputs[j], targetOutputs[j], weights1, weights2, weights3);
+
+                    }
+                    catch (Exception)
+                    {
+                        Console.WriteLine(">>> ErrSlip! <<< (after Cyclus: " + (r + 1) + "/" + CycleNumber + ") " + "learningRate: " + learningRate + ", sumErr: " + sumErr + ", minErr: " + minErr + ", SumValOutput:" + SumValOutput); Console.WriteLine();
+                        bjeg = true;
+                        break;
+                    }
+                    t++;
+                }
+                if (bjeg) break;
+            }
+        }
+        Printout();
+    }
+
+    private static void ReadFilesData(string TrainData_Path)
+    {
         System.Globalization.CultureInfo customCulture = new System.Globalization.CultureInfo("en-US");
         System.Threading.Thread.CurrentThread.CurrentCulture = customCulture;
         System.Text.Encoding.RegisterProvider(System.Text.CodePagesEncodingProvider.Instance);
 
-        using (var reader = new StreamReader(DatafilePath))
+        using (var reader = new StreamReader(TrainData_Path))
         {
             int rowNumber = 0;
             while (!reader.EndOfStream)
-                {
+            {
                 var line = reader.ReadLine();
                 var values = new string[0];
                 if (line != null)
@@ -78,8 +206,7 @@ partial class NeuralNetwork
                     values = line.Split(',');
                 }
 
-                // Ignoriraj redove zaglavlja.
-                if (rowNumber > 0)
+                if (rowNumber > 0)  // Ignoriraj redove zaglavlja.
                 {
                     double[] input = new double[INPUT];
                     for (int m = 0; m < INPUT; m++)
@@ -95,572 +222,73 @@ partial class NeuralNetwork
 
                     targetOutputs.Add(output);
                     inputs.Add(input);
-                 }
+                }
 
                 rowNumber++;
                 p = rowNumber;
-                }
-            }
-        
-
-        //Učitavanje matrica težina i biasa
-        string fileContents1 = System.IO.File.ReadAllText(weightsfilePath1);
-        double[][] weightsArray1 = fileContents1
-                .Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(line => line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(val => Double.Parse(val, CultureInfo.InvariantCulture))
-                    .ToArray())
-                .ToArray();
-
-           for (int i = 0; i < weightsArray1.Length; i++)
-           {
-                for (int j = 0; j < weightsArray1[i].Length; j++)
-                {
-                    weights1[i, j] = weightsArray1[i][j];
-                }
-           }
-
-            string fileContents2 = System.IO.File.ReadAllText(weightsfilePath2);
-            double[][] weightsArray2 = fileContents2
-                .Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(line => line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(val => Double.Parse(val, CultureInfo.InvariantCulture))
-                    .ToArray())
-                .ToArray();
-
-            for (int i = 0; i < weightsArray2.Length; i++)
-            {
-                for (int j = 0; j < weightsArray2[i].Length; j++)
-                {
-                    weights2[i, j] = weightsArray2[i][j];
-                }
-            }
-
-            string fileContents3 = System.IO.File.ReadAllText(weightsfilePath3);
-            double[][] weightsArray3 = fileContents3
-                .Split(new char[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-                .Select(line => line.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries)
-                    .Select(val => Double.Parse(val, CultureInfo.InvariantCulture))
-                    .ToArray())
-                .ToArray();
-
-           for (int i = 0; i < weightsArray3.Length; i++)
-           {
-                for (int j = 0; j < weightsArray3[i].Length; j++)
-                {
-                    weights3[i, j] = weightsArray3[i][j];
-                }
-           }
-
-            //Load Biases
-            string path1 = Path.Combine("Weights", "Biases.txt");
-            string firstLine = File.ReadLines(path1).First();
-
-            bias1 = firstLine.Split(' ')
-                .Select(s => Double.Parse(s, CultureInfo.InvariantCulture))
-                .ToArray();
-
-            string path2 = Path.Combine("Weights", "Biases.txt");
-            string secondLine = File.ReadLines(path2).Skip(1).First();
-
-            bias2 = secondLine.Split(' ')
-                .Select(s => Double.Parse(s, CultureInfo.InvariantCulture))
-                .ToArray();
-
-
-            string path3 = Path.Combine("Weights", "Biases.txt");
-            string thirdLine = File.ReadLines(path3).Skip(2).First();
-
-            bias3 = thirdLine.Split(' ')
-                .Select(s => Double.Parse(s, CultureInfo.InvariantCulture))
-                .ToArray();
-
-        // start: Treniranje mreže.
-        Random random = new Random();
-        if (CycleNumber > 0){             
-            double learningRate = 0.10;
-            int epochs = INPUT;
-            for (r = 0; r < CycleNumber; r++)
-            {
-                bool bjeg = false;
-                for (int j = 0; j < inputs.Count; j++)
-                {   //   <---------------------------------------------------------------------------------- broj iteracija po istom uzorku
-                    
-                    try
-                    {
-                        nn.Train(inputs[j], targetOutputs[j], learningRate, weights1, weights2, weights3);
-                    }
-                    catch (Exception)
-                    {
-                        Console.WriteLine(">>> Overfitting! <<< (after Cyclus: " + r + "/" + CycleNumber + ")"); Console.WriteLine();
-                        bjeg = true;
-                        break;
-                    }
-                    t++;
-                }
-                if (bjeg) break;
             }
         }
-        Printout();
-   }
-        static private void Printout() {
 
-        //Testiraj na ovom uzorku
-        double[,] primjer = {
-            {3,1},
-            {3,0},
-            {2,1},
-            {3,1},
-            {3,0},
-            {3,1},
-            {3,0},
-            {2,1},
-            {3,0},
-            {3,1},
-            {3,1},
-            {1,1},
-            {1,0},
-            {2,1},
-            {1,0},
-            {2,0},
-            {2,1},
-            {3,1},
-            {3,0},
-            {3,0},
-            {1,1},
-            {3,1},
-            {1,0},
-            {1,1},
-            {1,0},
-            {3,1},
-            {1,0},
-            {3,1},
-            {1,1},
-            {3,1},
-            {2,1},
-            {2,1},
-            {3,0},
-            {3,0},
-            {1,1},
-            {3,1},
-            {3,0},
-            {3,0},
-            {3,1},
-            {3,1},
-            {3,1},
-            {1,1},
-            {3,1},
-            {2,0},
-            {1,0},
-            {3,1},
-            {1,1},
-            {3,1},
-            {1,0},
-            {3,0},
-            {1,1},
-            {2,1},
-            {2,0},
-            {1,0},
-            {2,1},
-            {3,1},
-            {3,1},
-            {3,1},
-            {3,1},
-            {1,0},
-            {3,1},
-            {2,1},
-            {3,1},
-            {3,0},
-            {1,1},
-            {2,0},
-            {3,0},
-            {1,1},
-            {1,1},
-            {1,0},
-            {3,0},
-            {3,1},
-            {3,0},
-            {1,1},
-            {1,0},
-            {1,1},
-            {3,1},
-            {1,0},
-            {2,1},
-            {3,0},
-            {3,1},
-            {1,1},
-            {1,1},
-            {3,1},
-            {2,1},
-            {3,1},
-            {3,0},
-            {3,0},
-            {3,0},
-            {2,1},
-            {3,0},
-            {3,1},
-            {1,0},
-            {3,1},
-            {1,1},
-            {3,1},
-            {1,0},
-            {3,1},
-            {3,0},
-            {3,1},
-            {1,0},
-            {2,1},
-            {3,1},
-            {3,1},
-            {3,0},
-            {3,1},
-            {3,1},
-            {3,1},
-            {3,1},
-            {2,1},
-            {2,1},
-            {3,0},
-            {1,0},
-            {3,0},
-            {1,0},
-            {3,1},
-            {3,1},
-            {3,0},
-            {1,1},
-            {2,0},
-            {2,0},
-            {3,1},
-            {1,0},
-            {3,1},
-            {3,1},
-            {3,0},
-            {3,1},
-            {3,0},
-            {2,1},
-            {3,1},
-            {3,1},
-            {1,1},
-            {3,0},
-            {3,1},
-            {3,1},
-            {3,1},
-            {3,1},
-            {2,1},
-            {3,0},
-            {3,1},
-            {3,0},
-            {1,0},
-            {1,1},
-            {2,1},
-            {1,1},
-            {3,1},
-            {1,1},
-            {3,1},
-            {1,1},
-            {2,1},
-            {1,0},
-            {3,1},
-            {3,1},
-            {3,0},
-            {3,1},
-            {3,1},
-            {1,0},
-            {3,0},
-            {1,1},
-            {3,0},
-            {3,0},
-            {3,1},
-            {2,0},
-            {3,1},
-            {2,1},
-            {3,0},
-            {1,1},
-            {3,1},
-            {1,0},
-            {3,0},
-            {3,1},
-            {3,1},
-            {3,1},
-            {3,1},
-            {3,1},
-            {2,0},
-            {2,0},
-            {1,1},
-            {2,0},
-            {1,0},
-            {2,1},
-            {1,1},
-            {1,0},
-            {3,1},
-            {1,0},
-            {2,1},
-            {2,0},
-            {3,1},
-            {3,0},
-            {2,1},
-            {2,1},
-            {1,1},
-            {3,1},
-            {2,1},
-            {2,1},
-            {3,1},
-            {1,1},
-            {3,0},
-            {2,1},
-            {3,0},
-            {3,0},
-            {3,1},
-            {1,1},
-            {2,0},
-            {2,1},
-            {1,1},
-            {3,0},
-            {2,1},
-            {1,0},
-            {3,1},
-            {3,1},
-            {3,1},
-            {2,1},
-            {2,0},
-            {3,0},
-            {1,1},
-            {3,0},
-            {1,1},
-            {1,0},
-            {3,1},
-            {2,0},
-            {3,1},
-            {2,0},
-            {3,1},
-            {1,0},
-            {3,0},
-            {3,1},
-            {3,0},
-            {3,1},
-            {2,1},
-            {2,1},
-            {1,0},
-            {3,1},
-            {3,1},
-            {1,1},
-            {3,1},
-            {1,1},
-            {3,1},
-            {2,0},
-            {1,0},
-            {1,0},
-            {2,0},
-            {1,1},
-            {3,1},
-            {3,1},
-            {1,1},
-            {2,0},
-            {2,1},
-            {2,0},
-            {3,0},
-            {2,0},
-            {3,1},
-            {1,1},
-            {3,1},
-            {3,1},
-            {3,1},
-            {3,1},
-            {3,1},
-            {2,0},
-            {3,1},
-            {3,1},
-            {3,1},
-            {2,0},
-            {3,0},
-            {2,1},
-            {3,1},
-            {1,1},
-            {3,1},
-            {3,0},
-            {3,1},
-            {1,1},
-            {3,1},
-            {1,0},
-            {3,0},
-            {3,1},
-            {2,0},
-            {2,1},
-            {2,1},
-            {2,1},
-            {2,1},
-            {3,0},
-            {3,1},
-            {3,0},
-            {3,0},
-            {3,0},
-            {3,1},
-            {3,1},
-            {1,1},
-            {3,1},
-            {3,1},
-            {1,1},
-            {3,0},
-            {3,1},
-            {1,1},
-            {3,1},
-            {3,1},
-            {2,0},
-            {3,1},
-            {1,1},
-            {3,1},
-            {3,1},
-            {2,1},
-            {2,1},
-            {3,1},
-            {3,0},
-            {1,0},
-            {1,1},
-            {3,1},
-            {1,1},
-            {3,0},
-            {3,1},
-            {3,1},
-            {3,1},
-            {3,0},
-            {1,0},
-            {3,0},
-            {1,1},
-            {2,1},
-            {3,1},
-            {2,1},
-            {3,1},
-            {3,1},
-            {2,1},
-            {1,1},
-            {1,0},
-            {3,1},
-            {2,0},
-            {1,1},
-            {2,1},
-            {2,1},
-            {2,0},
-            {1,1},
-            {3,1},
-            {3,0},
-            {3,1},
-            {1,1},
-            {2,1},
-            {3,1},
-            {2,1},
-            {3,1},
-            {2,1},
-            {3,1},
-            {3,1},
-            {1,0},
-            {3,1},
-            {3,0},
-            {2,1},
-            {3,0},
-            {2,1},
-            {2,0},
-            {1,0},
-            {2,1},
-            {2,1},
-            {2,1},
-            {3,0},
-            {1,1},
-            {1,0},
-            {3,1},
-            {3,1},
-            {3,0},
-            {3,1},
-            {2,0},
-            {2,0},
-            {3,1},
-            {1,0},
-            {3,0},
-            {3,1},
-            {3,0},
-            {1,0},
-            {2,1},
-            {2,1},
-            {1,0},
-            {1,1},
-            {2,1},
-            {1,0},
-            {1,0},
-            {3,0},
-            {2,1},
-            {1,1},
-            {3,1},
-            {3,1},
-            {3,1},
-            {3,0},
-            {3,0},
-            {2,1},
-            {2,0},
-            {3,1},
-            {2,1},
-            {3,1},
-            {3,1},
-            {1,1},
-            {1,0},
-            {3,1},
-            {2,1},
-            {3,1},
-            {1,0},
-            {3,1},
-            {1,0},
-            {3,1},
-            {3,1},
-            {1,0},
-            {2,1},
-            {1,0},
-            {1,1},
-            {1,1},
-            {2,1},
-            {2,1},
-            {1,1},
-            {3,0},
-            {3,0},
-            {3,0},
-            {1,0},
-            {3,0},
-            {3,1},
-            {1,0},
-            {3,1},
-            {3,1},
-            {3,1}
-        };
+    }
 
+    static private void Printout() {
+
+        string[] lines = File.ReadAllLines(TestDataPath);
+
+        int numRows = lines.Length;
+        int numCols = lines[0].Split(',').Length;
+        Console.WriteLine(); Console.WriteLine("(" + numRows + ", " + numCols + ")");
+
+        double[,] primjer = new double[numRows, numCols];
+
+        for (int i = 1; i < numRows; i++)
+        {
+            string[] values = lines[i].Split(',');
+            for (int j = 0; j < numCols; j++)
+            {
+                if (double.TryParse(values[j], out double result))
+                {
+                    primjer[i, j] = result;
+                }
+                else
+                {
+                    Console.WriteLine("Pogreška pri pretvorbi vrijednosti u double. (" + i + ", " + j + ")");
+                }
+            }
+        }
+
+        Console.WriteLine(); Console.WriteLine("Results:");
         double[] Row = new double[primjer.GetLength(1)];
-            for (int red = 0; red < primjer.GetLength(0); red++)
+        for (int red = 1; red < primjer.GetLength(0); red++)
+        {
+            for (int i = 0; i < primjer.GetLength(1); i++)
             {
-                for (int i = 0; i < primjer.GetLength(1); i++)
-                {
-                    Row[i] = primjer[red, i];
-                }
-
-                double SigmoidajRedak(double[] x)
-                {
-                    double Sgm = 0;
-                    for (int i = 0; i < INPUT; i++)
-                    {
-                        Sgm += x[i];
-                    }
-                    return 1 - 1 / (1 + Math.Exp(-Sgm));
-                }
-
-                double[] OutputedVals = nn.Predict(Row, weights1, weights2, weights3, bias1, bias2, bias3);
-
-                //Console.WriteLine(Math.Round(OutputedVals[0] * 100, 6) + " %.");
-                Console.WriteLine((red+1) + ", "+Math.Round(OutputedVals[0],0));
-    
-            //Console.WriteLine(" ---> " + Math.Round(SigmoidajRedak(Row) * 100, 2) + " %.");
-            //Console.WriteLine("-------------");
+                Row[i] = primjer[red, i];
             }
-            Console.WriteLine("Done.");
-            Console.ReadLine();
+
+            double[] OutputedVals = nn.Predict(Row, weights1, weights2, weights3, bias1, bias2, bias3);
+
+            //Console.WriteLine(Math.Round(OutputedVals[0] * 100, 6) + " %.");
+            Console.WriteLine(OutputedVals[0].ToString("F9")
+               /*  +"           " + Math.Round((1 - Math.Pow((1 - OutputedVals[0]), 1.025)), 0)
+                 + "           " + Math.Round((1 - Math.Pow((1 - OutputedVals[0]), 1.05)), 0)
+                 + "           " + Math.Round((1 - Math.Pow((1 - OutputedVals[0]), 1.125)), 0)
+                 + "           " + Math.Round((1 - Math.Pow((1 - OutputedVals[0]), 1.20)), 0)
+                 + "           " + Math.Round((1 - Math.Pow((1 - OutputedVals[0]), 1.35)), 0)
+                 + "           " + Math.Round((1 - Math.Pow((1 - OutputedVals[0]), 1.50)), 0)
+                 + "           " + Math.Round((1 - Math.Pow((1 - OutputedVals[0]), 3.50)), 0 )*/
+               );
+
         }
-        
- 
+        Console.WriteLine("Done.");
+        Console.ReadLine();
+        Writeout();
+    }
+
+
 
     private double[] Predict(double[] input, double[,] weights1, double[,] weights2, double[,] weights3, double[] bias1, double[] bias2, double[] bias3)
-    {          
+    {
         // Propagacija INPUTa kroz mrežu.
         for (int i = 0; i < Size1; i++)
         {
@@ -695,25 +323,22 @@ partial class NeuralNetwork
         return output;
     }
 
-    private void Train(double[] input, double[] targetOutput, double learningRate, double[,] weights1, double[,] weights2, double[,] weights3)
-    {   
+    private void Train(double[] input, double[] targetOutput, double[,] weights1, double[,] weights2, double[,] weights3)
+    {
+
         // Propagacija unaprijed
         Predict(input, weights1, weights2, weights3, bias1, bias2, bias3);
 
-        // Propagacija unatrag
         double tmpErr = 1;
         double[] outputError = new double[OUTPUT];
 
         for (int j = 0; j < OUTPUT; j++)
         {
             outputError[j] = (targetOutput[j] - output[j]) * output[j] * (1 - output[j]);
-            tmpErr *= (Math.Pow(2, 1 + output[j]));
+            tmpErr *= (Math.Pow(2, 1 + Math.Abs(output[j])));
         }
 
-        if (ErrDiff <= tmpErr * Overfitting)//provjeava Overfitting
-            throw new Exception(); 
-        ErrDiff = tmpErr;
-
+        // Propagacija unatrag
         double[] hidden2Error = new double[Size2];
         for (int i = 0; i < Size2; i++)
         {
@@ -722,8 +347,21 @@ partial class NeuralNetwork
             {
                 sum += outputError[j] * weights3[i, j];
             }
-            hidden2Error[i] = sum * hidden2[i] * (1 - hidden2[i]);
+            if (targetOutputs[i][0] == 1) hidden2Error[i] = sum * hidden2[i] * (1 - hidden2[i]) / towardsNull;
+            else hidden2Error[i] = sum * hidden2[i] * (1 - hidden2[i]) * towardsNull;
         }
+
+        //provjera-------------------------------------------------------------------------------------------------------------------------------------------------------       
+        sumErr += tmpErr;
+        if (learningRate < learningRateMin) learningRate = learningRateMin;                                                        //provjerava Overfitting
+        if (learningRate > learningRateMax) learningRate = learningRateMax;
+        if (Math.Abs(tmpErr) * 0.90 <= Math.Abs(minErr)) learningRate *= 0.95; else learningRate *= 1.05;
+        if (Math.Abs(minErr) > Math.Abs(tmpErr)) minErr = tmpErr;
+        if (k >= p * 0.15) {
+            if (Math.Abs(minErr) <= Math.Abs(tmpErr - ErrSlip) && k / p > 0.75) throw new Exception(); //ErrSlip
+            if (sumErr != 0 && minErr / (sumErr / p) > 0.997 && k / p > 0.75) stop_learning = true; else stop_learning = false; //Overfitting
+        }
+        //-------------------------------------------------------------------------------------------------------------------------------------------------------provjera.
 
         double[] hidden1Error = new double[Size1];
         for (int i = 0; i < Size1; i++)
@@ -733,7 +371,8 @@ partial class NeuralNetwork
             {
                 sum += hidden2Error[j] * weights2[i, j];
             }
-            hidden1Error[i] = sum * hidden1[i] * (1 - hidden1[i]);
+            if (targetOutputs[i][0] == 1) hidden1Error[i] = sum * hidden1[i] * (1 - hidden1[i]) / towardsNull;
+            else hidden1Error[i] = sum * hidden1[i] * (1 - hidden1[i]) * towardsNull;
         }
 
         // Ažuriranje težina i pomaka
@@ -773,24 +412,12 @@ partial class NeuralNetwork
             line1 = "";
         }
 
-        if (t >= (p - 1) * CycleNumber - 1)
-        {
-            fileContent1 = string.Join(Environment.NewLine, lines1);
-            fileContent2 = string.Join(Environment.NewLine, lines2);
-            fileContent3 = string.Join(Environment.NewLine, lines3);
+        if (t >= (p - 1) * CycleNumber - 1) Writeout();
 
-            File.WriteAllText(weightsfilePath3, fileContent3); TransposeMatrix(weightsfilePath3);
-            File.WriteAllText(weightsfilePath2, fileContent2); TransposeMatrix(weightsfilePath2);
-            File.WriteAllText(weightsfilePath1, fileContent1); TransposeMatrix(weightsfilePath1);
+       
+    }
 
-            string[][] Biases = new string[][] { bline1.TrimEnd().Split(' '), bline2.TrimEnd().Split(' '), bline3.TrimEnd().Split(' ') };
-            string directory = "Weights";
-            string filename = "Biases.txt";
-            string path = Path.Combine(directory, filename);
-            File.WriteAllLines(path, Biases.Select(row => string.Join(" ", row)).Where(row => !string.IsNullOrWhiteSpace(row)));
-        }
-
-        // Transponira matricu
+ // Transponira matricu
         static void TransposeMatrix(string localfilePath)
         {
             string[] lines = File.ReadAllLines(localfilePath);
@@ -838,9 +465,24 @@ partial class NeuralNetwork
                     }
                 }
             }
-        }        
-    }
-    
+        }    
+        
+        static void Writeout()
+        {
+            fileContent1 = string.Join(Environment.NewLine, lines1);
+            fileContent2 = string.Join(Environment.NewLine, lines2);
+            fileContent3 = string.Join(Environment.NewLine, lines3);
+
+            File.WriteAllText(weightsfilePath3, fileContent3); TransposeMatrix(weightsfilePath3);
+            File.WriteAllText(weightsfilePath2, fileContent2); TransposeMatrix(weightsfilePath2);
+            File.WriteAllText(weightsfilePath1, fileContent1); TransposeMatrix(weightsfilePath1);
+
+            string[][] Biases = new string[][] { bline1.TrimEnd().Split(' '), bline2.TrimEnd().Split(' '), bline3.TrimEnd().Split(' ') };
+            string directory = "Weights";
+            string filename = "Biases.txt";
+            string path = Path.Combine(directory, filename);
+            File.WriteAllLines(path, Biases.Select(row => string.Join(" ", row)).Where(row => !string.IsNullOrWhiteSpace(row)));
+        }
     private NeuralNetwork(int inputSize, int hiddenSize1, int hiddenSize2, int outputSize)
     {
         // Inicijalizacija
@@ -859,7 +501,7 @@ partial class NeuralNetwork
     }
 
     private static void CreateMatrix(int m, int n, int i)
-    {       
+    {
         // Create the matrix and initialize it to all 0's.
         double[,] matrix = new double[(int)m, (int)n];
         for (int row = 0; row < m; row++)
