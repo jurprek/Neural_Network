@@ -2,13 +2,13 @@
 {
     // Define Neural Network.
     private static int INPUT = 9;       //Titanic=3, Bank=9
-    private static int Size1 = 270;
+    private static int Size1 = 360;
     private static int Size2 = 540;
     private static int OUTPUT = 1;      //Titanic=1, Bank=1
     private static int CycleNumber = 5;
-    private static double ErrSlip = 1.75;
-    private static double learningRateMin = 0.10;
-    private static double learningRateMax = 10;
+    private static double ErrSlip = 2.50;
+    private static double learningRateMin = 0.25;
+    private static double learningRateMax = 0.85;
     private static double towardsNull = 0.50;
 
     // Load data from .CSV & .txt files.

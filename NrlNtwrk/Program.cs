@@ -150,7 +150,7 @@ partial class NeuralNetwork
             int epochs = INPUT;
             for (r = 0; r < CycleNumber; r++)
             {
-                Console.Clear(); Console.Write((r + 1) + " / " + CycleNumber + "   -  " + learningRate + "; minErr: " + minErr + ", SumErr: " + sumErr / p + ", SumValOutput/p:" + (SumValOutput / p) + ", " + "k:" + k);
+                Console.Clear(); Console.Write((r + 1) + " / " + CycleNumber + "   -  " + learningRate + "; minErr: " + minErr + ", SumErr: " + sumErr / p + ", SumValOutput/p:" + (SumValOutput / p) + ", SumvalOutput: " + SumValOutput + ", p: " + p + ", k:" + k);
                 bool bjeg = false;
                 if (stop_learning && r > 5) { Console.WriteLine("    Asimpthotic Error, overfitting... " + minErr); bjeg = true; break; }
                 sumErr = 0.1;
@@ -170,9 +170,7 @@ partial class NeuralNetwork
 
                     try
                     {
-                        SumValOutput += output[0];// Console.WriteLine(SumValOutput);
                         nn.Train(inputs[j], targetOutputs[j], weights1, weights2, weights3);
-
                     }
                     catch (Exception)
                     {
@@ -411,10 +409,7 @@ partial class NeuralNetwork
             lines1[j] = line1.TrimEnd();
             line1 = "";
         }
-
-        if (t >= (p - 1) * CycleNumber - 1) Writeout();
-
-       
+        SumValOutput += output[0];
     }
 
  // Transponira matricu
