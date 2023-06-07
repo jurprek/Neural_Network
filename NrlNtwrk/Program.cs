@@ -280,7 +280,7 @@ partial class NeuralNetwork
         }
         Console.WriteLine("Done.");
         Console.ReadLine();
-        Writeout();
+        if (CycleNumber > 0) Writeout();
     }
 
 
