@@ -44,6 +44,7 @@ partial class NeuralNetwork
     private static double sumErr = 0.1;
     private static double SumValOutput = 0;
     private static double learningRate = 0.50;
+    private static double old_sumErr = 999;
 
     //Inicijalizacija Neuralne Mreže ----------------------------------
     static NeuralNetwork nn = new NeuralNetwork(INPUT, Size1, Size2, OUTPUT);//
@@ -150,7 +151,7 @@ partial class NeuralNetwork
             int epochs = INPUT;
             for (r = 0; r < CycleNumber; r++)
             {
-                Console.Clear(); Console.Write((r + 1) + " / " + CycleNumber + "   -  " + learningRate + "; minErr: " + minErr + ", SumErr: " + sumErr / p + ", SumValOutput/p:" + (SumValOutput / p) + ", SumvalOutput: " + SumValOutput + ", p: " + p + ", k:" + k);
+                Console.Clear(); Console.Write((r + 1) + " / " + CycleNumber + "   -  " + learningRate + ", SumErr: " + sumErr / p);
                 bool bjeg = false;
                 if (stop_learning && r > 5) { Console.WriteLine("    Asimpthotic Error, overfitting... " + minErr); bjeg = true; break; }
                 sumErr = 0.1;
@@ -174,13 +175,13 @@ partial class NeuralNetwork
                     }
                     catch (Exception)
                     {
-                        Console.WriteLine(">>> ErrSlip! <<< (after Cyclus: " + (r + 1) + "/" + CycleNumber + ") " + "learningRate: " + learningRate + ", sumErr: " + sumErr + ", minErr: " + minErr + ", SumValOutput:" + SumValOutput); Console.WriteLine();
+                        Console.WriteLine(">>> ErrSlip! <<< (after Cyclus: " + (r + 1) + "/" + CycleNumber + ") " + "learningRate: " + learningRate + ", sumErr: " + sumErr); Console.WriteLine();
                         bjeg = true;
                         break;
                     }
                     t++;
                 }
-                if (bjeg) break;
+                if (bjeg) break;                
             }
         }
         Printout();
@@ -279,7 +280,7 @@ partial class NeuralNetwork
 
         }
         Console.WriteLine("Done.");
-        Console.ReadLine();
+        //Console.ReadLine();
         if (CycleNumber > 0) Writeout();
     }
 
@@ -349,20 +350,20 @@ partial class NeuralNetwork
             else hidden2Error[i] = sum * hidden2[i] * (1 - hidden2[i]) * towardsNull;
         }
 
-        //provjera-------------------------------------------------------------------------------------------------------------------------------------------------------       
+        //provjera-------------------------------------------------------------------------------------------------------------------------------------------------------
+        old_sumErr = sumErr;
         sumErr += tmpErr;
         if (learningRate < learningRateMin) learningRate = learningRateMin;                                                        //provjerava Overfitting
         if (learningRate > learningRateMax) learningRate = learningRateMax;
-        if (Math.Abs(tmpErr) * 0.90 <= Math.Abs(minErr)) learningRate *= 0.95; else learningRate *= 1.05;
+        if (Math.Abs(tmpErr) * 0.95 <= Math.Abs(minErr)) learningRate *= 1.10; else learningRate *= 0.80;
         if (Math.Abs(minErr) > Math.Abs(tmpErr)) minErr = tmpErr;
         if (k >= p * 0.15) {
-            if (Math.Abs(minErr) <= Math.Abs(tmpErr - ErrSlip) && k / p > 0.75) throw new Exception(); //ErrSlip
-            if (sumErr != 0 && minErr / (sumErr / p) > 0.997 && k / p > 0.75) stop_learning = true; else stop_learning = false; //Overfitting
+            if (sumErr >= old_sumErr) stop_learning = true; else stop_learning = false; //Overfitting
         }
         //-------------------------------------------------------------------------------------------------------------------------------------------------------provjera.
 
         double[] hidden1Error = new double[Size1];
-        for (int i = 0; i < Size1; i++)
+        for (int i = 0; i < Size1; i++) 
         {
             double sum = 0;
             for (int j = 0; j < Size2; j++)
@@ -486,12 +487,12 @@ partial class NeuralNetwork
         hidden1 = new double[hiddenSize1];
         for (int i = 0; i < hiddenSize1; i++)
         {
-            hidden1[i] = 0; // set each element to 0
+            hidden1[i] = (rand.Next()-0.50)*100; // set each element to 0
         }
         hidden2 = new double[hiddenSize2];
         for (int i = 0; i < hiddenSize2; i++)
         {
-            hidden2[i] = 0; // set each element to 0
+            hidden2[i] = (rand.Next() - 0.50) * 100; // set each element to 0
         }
     }
 
